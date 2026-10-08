@@ -15,7 +15,14 @@ function ensurePseudo(){
   }
   pseudoInput.classList.remove("err"); pseudoInput.value=v; setPseudo(v); return true;
 }
-pseudoInput.addEventListener("input", function(){ pseudoInput.classList.remove("err"); });
+// avatar : initiale du pseudo, vert quand le pseudo est valide
+function refreshAvatar(){
+  var v=cleanPseudo(pseudoInput.value), a=$("pseudoAvatar");
+  a.textContent = v ? v.charAt(0).toUpperCase() : "?";
+  a.classList.toggle("ok", PSEUDO_RE.test(v));
+}
+pseudoInput.addEventListener("input", function(){ pseudoInput.classList.remove("err"); refreshAvatar(); });
+refreshAvatar();
 pseudoInput.addEventListener("keydown", function(e){ if(e.key==="Enter" && ensurePseudo()){ pseudoInput.blur(); toast("Salut "+getPseudo()+" ! Choisis ton mode de jeu."); } });
 function playQuiz(){ if(ensurePseudo()) startQuiz(); }
 function playExam(){ if(ensurePseudo()) startExam(); }
@@ -26,6 +33,7 @@ $("quizBtn").addEventListener("click", playQuiz);
 $("examBtn").addEventListener("click", playExam);
 $("advBtn").addEventListener("click", playAdv);
 $("clearTargetBtn").addEventListener("click", clearTargets);
+$("targetQuizBtn").addEventListener("click", playQuiz);
 $("changeSubjectBtn").addEventListener("click", function(){ go(STATE.SUBJECT); });
 Array.prototype.forEach.call(document.querySelectorAll("[data-board]"), function(b){
   b.addEventListener("click", function(){ boardMode=b.getAttribute("data-board"); refreshTitleBoard(); }); });

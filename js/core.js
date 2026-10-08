@@ -33,14 +33,15 @@ var Store = {
 };
 // Record de points et meilleure note d'examen : propres à chaque matière.
 // (la matière « pilotage » reprend l'ancien record, enregistré avant la gestion multi-matières)
-function bestKey(){ return "cybercrise_best_"+subject.id; }
-function getBest(){
-  var v=Store.get(bestKey(), null);
-  if(v===null && subject.id==="pilotage") v=Store.get("cybercrise_best_v1", "0");
+function getBestFor(id){
+  var v=Store.get("cybercrise_best_"+id, null);
+  if(v===null && id==="pilotage") v=Store.get("cybercrise_best_v1", "0");
   return parseInt(v||"0",10)||0;
 }
-function setBest(v){ Store.set(bestKey(), v); }
-function getBestNote(){ var v=parseFloat(Store.get("cybercrise_exam_"+subject.id, "")); return isNaN(v) ? null : v; }
+function getBestNoteFor(id){ var v=parseFloat(Store.get("cybercrise_exam_"+id, "")); return isNaN(v) ? null : v; }
+function getBest(){ return getBestFor(subject.id); }
+function setBest(v){ Store.set("cybercrise_best_"+subject.id, v); }
+function getBestNote(){ return getBestNoteFor(subject.id); }
 function setBestNote(v){ Store.set("cybercrise_exam_"+subject.id, v); }
 
 // Animation du score (HUD)
@@ -145,7 +146,7 @@ function go(next){
   document.body.classList.toggle("exam", next===STATE.QUIZ && run.exam);
   window.scrollTo(0,0);
   if(next===STATE.TITLE){ setTheme(subject.color); refreshBestLine(); refreshTitleBoard(); }
-  if(next===STATE.SUBJECT){ setTheme("#b06bff"); var f=document.querySelector(".subject-card:not(.soon)"); if(f) f.focus({preventScroll:true}); }
+  if(next===STATE.SUBJECT){ setTheme("#b06bff"); renderSubjectMenu(); var f=document.querySelector(".subject-card:not(.soon)"); if(f) f.focus({preventScroll:true}); }
 }
 
 // ======================================================================
@@ -157,21 +158,36 @@ function chooseSubject(s){
   renderTitle();
   go(STATE.TITLE);
 }
+function el(tag, cls, txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!==undefined) e.textContent=txt; return e; }
 function renderSubjectMenu(){
   var grid=$("subjectGrid"); grid.innerHTML="";
-  SUBJECTS.forEach(function(s){
-    var b=document.createElement("button"); b.type="button"; b.className="subject-card"; b.setAttribute("role","listitem");
+  SUBJECTS.forEach(function(s, i){
+    var b=el("button","subject-card"); b.type="button"; b.setAttribute("role","listitem");
     b.style.setProperty("--sc", s.color);
-    var tags=(s.tags||[]).concat([countQuestions(s)+" questions", s.themes.length+" domaines"]);
-    b.innerHTML='<span class="ico" aria-hidden="true"></span><span class="nm"></span><span class="ds"></span><span class="mt"></span><span class="go">Réviser cette matière ▶</span>';
-    b.querySelector(".ico").textContent=s.icon||"📚"; b.querySelector(".nm").textContent=s.name; b.querySelector(".ds").textContent=s.desc||"";
-    tags.forEach(function(t){ var c=document.createElement("span"); c.className="chip"; c.textContent=t; b.querySelector(".mt").appendChild(c); });
+    var top=el("span","sc-top");
+    top.appendChild(el("span","sc-ico", s.icon||"📚"));
+    top.appendChild(el("span","sc-badge", "Disponible"));
+    b.appendChild(top);
+    b.appendChild(el("span","sc-name", s.name));
+    b.appendChild(el("span","sc-desc", s.desc||""));
+    var tags=el("span","sc-tags");
+    (s.tags||[]).concat([countQuestions(s)+" questions", s.themes.length+" domaines"]).forEach(function(t){ tags.appendChild(el("span","chip",t)); });
+    b.appendChild(tags);
+    // progression du joueur sur cette matière
+    var best=getBestFor(s.id), note=getBestNoteFor(s.id), prog=el("span","sc-progress");
+    [[best>0 ? best.toLocaleString("fr-FR")+" pts" : "—", "Record"], [note!==null ? fmtNote(note)+" / 20" : "—", "Meilleure note"]].forEach(function(p){
+      var c=el("span","scp"); c.appendChild(el("b","",p[0])); c.appendChild(el("span","",p[1])); prog.appendChild(c); });
+    b.appendChild(prog);
+    var cta=el("span","sc-cta","Réviser cette matière "); cta.appendChild(el("span","arrow","→")); b.appendChild(cta);
+    if(i===0) b.appendChild(el("kbd","sc-kbd","1"));
     b.addEventListener("click", function(){ chooseSubject(s); });
     grid.appendChild(b);
   });
   // emplacement visuel pour les prochaines matières
-  var soon=document.createElement("div"); soon.className="subject-card soon"; soon.setAttribute("role","listitem"); soon.setAttribute("aria-disabled","true");
-  soon.innerHTML='<span class="ico" aria-hidden="true">🔒</span><span class="nm">Bientôt</span><span class="ds">D\'autres matières arrivent prochainement.</span>';
+  var soon=el("div","subject-card soon"); soon.setAttribute("role","listitem"); soon.setAttribute("aria-disabled","true");
+  soon.appendChild(el("span","sc-ico","🔒"));
+  soon.appendChild(el("span","sc-name","Bientôt"));
+  soon.appendChild(el("span","sc-desc","D'autres matières du Master arrivent prochainement."));
   grid.appendChild(soon);
 }
 
@@ -181,34 +197,46 @@ function renderSubjectMenu(){
 var selectedThemes={};                 // domaines cochés pour un quiz ciblé (vide = tous)
 function selectedThemeIds(){ return THEMES.filter(function(t){ return selectedThemes[t.id]; }).map(function(t){ return t.id; }); }
 function renderTitle(){
-  $("subjectEyebrow").textContent="Révision interactive · "+subject.name;
+  $("subjectEyebrow").textContent="Matière"+((subject.tags||[]).length ? " · "+subject.tags.join(" · ") : "");
+  $("subjectIcon").textContent=subject.icon||"📚";
+  $("subjectName").textContent=subject.name;
+  $("subjectDesc").textContent=subject.desc||"";
   document.title="CyberCrise — "+subject.name;
+  document.documentElement.style.setProperty("--subject", subject.color||"#b06bff");
   var row=$("themesRow"); row.innerHTML="";
   THEMES.forEach(function(t){
-    var el=document.createElement("button"); el.type="button"; el.className="trow-item"; el.setAttribute("aria-pressed","false");
-    el.style.borderLeftColor=t.color; el.style.setProperty("--tc", t.color);
-    el.textContent=t.name+" · "+BANK[t.id].length;
-    el.title="Cliquer pour cibler ce domaine dans le Quiz";
-    el.addEventListener("click", function(){
+    var b=el("button","trow-item"); b.type="button"; b.setAttribute("aria-pressed","false");
+    b.style.setProperty("--tc", t.color);
+    b.appendChild(el("span","tn", t.name)); b.appendChild(el("span","tc", String(BANK[t.id].length)));
+    b.addEventListener("click", function(){
       selectedThemes[t.id]=!selectedThemes[t.id];
-      el.classList.toggle("on", !!selectedThemes[t.id]); el.setAttribute("aria-pressed", selectedThemes[t.id]?"true":"false");
+      b.classList.toggle("on", !!selectedThemes[t.id]); b.setAttribute("aria-pressed", selectedThemes[t.id]?"true":"false");
       refreshTargetLine();
     });
-    row.appendChild(el);
+    row.appendChild(b);
   });
-  $("qCountChip").textContent = countQuestions(subject)+" questions";
-  $("themesChip").textContent = THEMES.length+" domaines";
-  $("advCard").style.display = LEVELS.length ? "" : "none";            // une matière sans niveaux n'a pas d'aventure
-  $("examSmall").textContent = Math.min(GAME.examLength, countQuestions(subject))+" questions · "+GAME.examMinutes+" min · note sur 20 · correction à la fin";
-  $("quizSmall").textContent = GAME.quizLength+" questions au hasard · combo · chrono adapté (30 s pour les calculs)";
+  var nQ=countQuestions(subject);
+  $("qCountChip").textContent = nQ;
+  $("themesChip").textContent = THEMES.length;
+  $("advBtn").style.display = LEVELS.length ? "" : "none";            // une matière sans niveaux n'a pas d'aventure
+  $("advLvlPill").textContent = LEVELS.length+" niveau"+(LEVELS.length>1?"x":"");
+  $("quizLenPill").textContent = Math.min(GAME.quizLength, nQ)+" questions";
+  $("examLenPill").textContent = Math.min(GAME.examLength, nQ)+" questions";
+  $("examTimePill").textContent = GAME.examMinutes+" min";
+  $("quizSmall").textContent = "Questions au hasard, 3 vies et des combos. "+GAME.quizTime+" s par question, "+GAME.quizTimeHard+" s pour les calculs.";
+  $("examSmall").textContent = "Le format du QCM final : toutes les notions, sans correction avant la fin. Tu obtiens une note sur 20.";
   refreshTargetLine();
 }
 function refreshTargetLine(){
-  var ids=selectedThemeIds(), el=$("targetLine");
-  if(!ids.length){ el.innerHTML="🎯 Astuce : clique sur des domaines pour un <b>Quiz ciblé</b> (entraînement non classé)."; $("clearTargetBtn").style.display="none"; return; }
+  var ids=selectedThemeIds(), line=$("targetLine");
+  if(!ids.length){
+    line.textContent="Sélectionne un ou plusieurs domaines pour t'entraîner uniquement dessus (partie non classée).";
+    $("clearTargetBtn").style.display="none"; $("targetQuizBtn").style.display="none"; return;
+  }
   var n=0; ids.forEach(function(id){ n+=BANK[id].length; });
-  el.innerHTML="🎯 <b>Quiz ciblé</b> : "+ids.length+" domaine"+(ids.length>1?"s":"")+" · "+n+" questions disponibles (entraînement non classé)";
-  $("clearTargetBtn").style.display="";
+  line.textContent=ids.length+" domaine"+(ids.length>1?"s":"")+" sélectionné"+(ids.length>1?"s":"")+" · "+n+" questions disponibles.";
+  $("clearTargetBtn").style.display=""; $("targetQuizBtn").style.display="";
+  $("targetQuizBtn").textContent="⚡ Lancer le quiz ciblé ("+Math.min(GAME.quizLength, n)+" questions)";
 }
 function clearTargets(){
   selectedThemes={};
@@ -216,8 +244,7 @@ function clearTargets(){
   refreshTargetLine();
 }
 function refreshBestLine(){
-  var b=getBest(), nb=getBestNote(), parts=[];
-  if(b>0) parts.push("Ton record : <b>"+b.toLocaleString("fr-FR")+" pts</b>");
-  if(nb!==null) parts.push("Meilleure note à l'examen blanc : <b>"+fmtNote(nb)+" / 20</b>");
-  $("bestLine").innerHTML = parts.length ? parts.join(" · ") : "Aucun record encore — à toi de jouer.";
+  var b=getBest(), nb=getBestNote();
+  $("statRecord").textContent = b>0 ? b.toLocaleString("fr-FR") : "—";
+  $("statNote").textContent = nb!==null ? fmtNote(nb)+"/20" : "—";
 }

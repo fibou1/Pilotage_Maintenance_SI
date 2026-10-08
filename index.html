@@ -22,59 +22,110 @@
 
   <!-- ===== ÉTAT SUBJECT : choix de la matière à réviser ===== -->
   <section class="screen active" id="scrSubject">
-    <div class="title-wrap">
-      <div class="eyebrow">Révision interactive · Master 2 Infrastructure, Cloud &amp; Sécurité</div>
-      <h1 class="bigtitle">CYBER<b>CRISE</b></h1>
-      <p class="subtitle">Choisis la matière que tu veux réviser.</p>
+    <div class="hub">
+      <header class="hero hero-center">
+        <div class="brand-mark" aria-hidden="true"><span>🛡️</span></div>
+        <div class="eyebrow">Révision interactive · Master 2 Infrastructure, Cloud &amp; Sécurité</div>
+        <h1 class="bigtitle">CYBER<b>CRISE</b></h1>
+        <p class="lead">Révise tes cours en jouant : quiz arcade, examen blanc et aventure 2D. Commence par choisir ta matière.</p>
+      </header>
+
+      <div class="section-h">
+        <h2>Matières</h2>
+        <span class="hint">Touche <kbd>1</kbd> pour ouvrir la première</span>
+      </div>
       <div class="subject-grid" id="subjectGrid" role="list"></div>
+
+      <ul class="feature-row" aria-label="Ce que propose le jeu">
+        <li><span class="fi" style="--fc:var(--accent)">⚡</span><span><b>Quiz arcade</b>Combos, chrono et classement</span></li>
+        <li><span class="fi" style="--fc:var(--warn)">📝</span><span><b>Examen blanc</b>Le format du QCM final, noté sur 20</span></li>
+        <li><span class="fi" style="--fc:var(--ok)">◆</span><span><b>Aventure 2D</b>Chaque cristal est une question</span></li>
+      </ul>
     </div>
   </section>
 
   <!-- ===== ÉTAT TITLE : accueil de la matière choisie ===== -->
   <section class="screen" id="scrTitle">
-    <div class="title-wrap">
-      <button class="back-link" type="button" id="changeSubjectBtn">← Changer de matière</button>
-      <div class="eyebrow" id="subjectEyebrow">Révision interactive · Pilotage de la maintenance du SI</div>
-      <h1 class="bigtitle">CYBER<b>CRISE</b></h1>
-      <p class="subtitle">Neutralise les menaces en répondant juste. Choisis ton terrain : le quiz arcade pour enchaîner les combos, ou l'aventure 2D pour collecter des cristaux de données à travers le SI de CampusCloud.</p>
-      <div class="themes-row" id="themesRow" aria-label="Domaines : clique pour cibler le Quiz"></div>
-      <div class="target-line"><span id="targetLine"></span> <button class="back-link" type="button" id="clearTargetBtn" style="display:none">✕ Tous les domaines</button></div>
-      <div class="pseudo-row">
-        <label for="pseudo">Ton pseudo</label>
-        <input id="pseudo" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="ex. Firas_N2" aria-describedby="pseudoHelp">
-      </div>
-      <div class="board-src" id="pseudoHelp" style="margin-top:-10px">2 à 16 caractères (lettres, chiffres, espace, _ - .) · affiché dans le classement</div>
-      <div class="mode-row">
-        <div class="mode-card">
-          <button class="start-btn" id="quizBtn" type="button">▶ Mode Quiz</button>
-          <small id="quizSmall"></small>
-        </div>
-        <div class="mode-card" id="advCard">
-          <button class="start-btn alt" id="advBtn" type="button">◆ Mode Aventure</button>
-          <small>3 niveaux · cristaux = QCM · pouvoirs, chrono RTO et secrets</small>
-        </div>
-        <div class="mode-card">
-          <button class="start-btn exam" id="examBtn" type="button">📝 Examen blanc</button>
-          <small id="examSmall"></small>
-        </div>
-      </div>
-      <div class="best-line" id="bestLine"></div>
-      <section class="board" id="titleBoard" aria-labelledby="titleBoardH">
-        <div class="board-h">
-          <h3 id="titleBoardH">🏆 Classement</h3>
-          <div class="tabs" role="tablist">
-            <button class="tab on" type="button" role="tab" data-board="quiz">Quiz</button>
-            <button class="tab" type="button" role="tab" data-board="aventure">Aventure</button>
+    <div class="hub">
+      <nav class="topbar" aria-label="Navigation">
+        <button class="nav-btn" type="button" id="changeSubjectBtn"><span aria-hidden="true">←</span> Matières</button>
+        <span class="brand-small" aria-hidden="true">CYBER<b>CRISE</b></span>
+        <button class="nav-btn icon mute-btn" type="button">🔊</button>
+      </nav>
+
+      <header class="hero hero-subject">
+        <div class="hero-main">
+          <div class="eyebrow" id="subjectEyebrow">Matière</div>
+          <h1 class="subject-title"><span class="subject-ico" id="subjectIcon" aria-hidden="true"></span><span id="subjectName"></span></h1>
+          <p class="lead" id="subjectDesc"></p>
+          <div class="hero-stats">
+            <div class="hs"><b id="qCountChip">0</b><span>questions</span></div>
+            <div class="hs"><b id="themesChip">0</b><span>domaines</span></div>
+            <div class="hs"><b id="statRecord">—</b><span>ton record</span></div>
+            <div class="hs"><b id="statNote">—</b><span>meilleure note</span></div>
           </div>
         </div>
-        <ol id="boardList"></ol>
-        <div class="board-src" id="boardSrc"></div>
+        <div class="player-card">
+          <label for="pseudo" class="pc-label">Ton pseudo de joueur</label>
+          <div class="pc-field">
+            <span class="pc-avatar" id="pseudoAvatar" aria-hidden="true">?</span>
+            <input id="pseudo" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="ex. Firas_N2" aria-describedby="pseudoHelp">
+          </div>
+          <div class="pc-help" id="pseudoHelp">2 à 16 caractères (lettres, chiffres, espace, _ - .). Affiché dans le classement.</div>
+        </div>
+      </header>
+
+      <section aria-labelledby="modesH">
+        <div class="section-h">
+          <h2 id="modesH">Choisis ton mode</h2>
+          <span class="hint">Raccourcis <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span>
+        </div>
+        <div class="mode-grid">
+          <button class="mode-tile" type="button" id="quizBtn" style="--mc:var(--accent)">
+            <span class="mt-ico" aria-hidden="true">⚡</span>
+            <span class="mt-title">Quiz arcade</span>
+            <span class="mt-desc" id="quizSmall"></span>
+            <span class="mt-meta"><span id="quizLenPill">20 questions</span><span>≈ 6 min</span><span>🏆 Classé</span></span>
+            <span class="mt-cta">Jouer</span><kbd>1</kbd>
+          </button>
+          <button class="mode-tile" type="button" id="advBtn" style="--mc:var(--ok)">
+            <span class="mt-ico" aria-hidden="true">◆</span>
+            <span class="mt-title">Aventure 2D</span>
+            <span class="mt-desc">Un jeu de plateforme où chaque cristal est un QCM. Pouvoirs, chrono RTO et secrets à trouver.</span>
+            <span class="mt-meta"><span id="advLvlPill">3 niveaux</span><span>≈ 15 min</span><span>🏆 Classé</span></span>
+            <span class="mt-cta">Jouer</span><kbd>2</kbd>
+          </button>
+          <button class="mode-tile" type="button" id="examBtn" style="--mc:var(--warn)">
+            <span class="mt-ico" aria-hidden="true">📝</span>
+            <span class="mt-title">Examen blanc</span>
+            <span class="mt-desc" id="examSmall"></span>
+            <span class="mt-meta"><span id="examLenPill">40 questions</span><span id="examTimePill">60 min</span><span>Note / 20</span></span>
+            <span class="mt-cta">Commencer</span><kbd>3</kbd>
+          </button>
+        </div>
       </section>
-      <div class="title-meta">
-        <span class="chip" id="themesChip">0 domaines</span>
-        <span class="chip" id="qCountChip">0 questions</span>
-        <span class="chip">Clavier &amp; tactile</span>
-        <span class="chip">GitHub Pages ready</span>
+
+      <div class="hub-cols">
+        <section class="panel" aria-labelledby="targetH">
+          <div class="panel-h">
+            <h3 id="targetH">🎯 Réviser des domaines précis</h3>
+            <button class="link-btn" type="button" id="clearTargetBtn" style="display:none">Tout désélectionner</button>
+          </div>
+          <p class="panel-sub" id="targetLine"></p>
+          <div class="themes-row" id="themesRow" aria-label="Domaines à cibler"></div>
+          <button class="btn2 primary block" type="button" id="targetQuizBtn" style="display:none">⚡ Lancer le quiz ciblé</button>
+        </section>
+        <section class="panel board" id="titleBoard" aria-labelledby="titleBoardH">
+          <div class="panel-h">
+            <h3 id="titleBoardH">🏆 Classement</h3>
+            <div class="tabs" role="tablist">
+              <button class="tab on" type="button" role="tab" data-board="quiz">Quiz</button>
+              <button class="tab" type="button" role="tab" data-board="aventure">Aventure</button>
+            </div>
+          </div>
+          <ol id="boardList"></ol>
+          <div class="board-src" id="boardSrc"></div>
+        </section>
       </div>
     </div>
   </section>
@@ -152,31 +203,37 @@
 
   <!-- ===== ÉTAT RESULT ===== -->
   <section class="screen" id="scrResults">
-    <div class="results">
-      <div class="eyebrow" id="resEyebrow">Mission terminée</div>
-      <div class="rank-badge" id="rankBadge">—</div>
-      <div class="res-score"><span id="finalScore">0</span><small id="finalUnit"> PTS</small></div>
-      <div class="res-stats">
-        <div class="rstat"><div class="v" id="rAcc">0%</div><div class="l" id="rAccL">Précision</div></div>
-        <div class="rstat"><div class="v" id="rCombo">x0</div><div class="l" id="rComboL">Meilleur combo</div></div>
-        <div class="rstat" id="rLevelsBox"><div class="v" id="rLevels">0/3</div><div class="l" id="rLevelsL">Niveaux</div></div>
-        <div class="rstat best"><div class="v" id="rBest">0</div><div class="l" id="rBestL">Record</div></div>
+    <div class="hub">
+      <header class="res-hero">
+        <div class="eyebrow" id="resEyebrow">Mission terminée</div>
+        <div class="res-score"><span id="finalScore">0</span><small id="finalUnit"> PTS</small></div>
+        <div class="rank-badge" id="rankBadge">—</div>
+        <div class="res-stats">
+          <div class="rstat"><div class="v" id="rAcc">0%</div><div class="l" id="rAccL">Précision</div></div>
+          <div class="rstat"><div class="v" id="rCombo">x0</div><div class="l" id="rComboL">Meilleur combo</div></div>
+          <div class="rstat" id="rLevelsBox"><div class="v" id="rLevels">0/3</div><div class="l" id="rLevelsL">Niveaux</div></div>
+          <div class="rstat best"><div class="v" id="rBest">0</div><div class="l" id="rBestL">Record</div></div>
+        </div>
+        <div class="res-actions">
+          <button class="btn2 primary" id="replayBtn" type="button">↻ Rejouer</button>
+          <button class="btn2 ghost" id="shareBtn" type="button">⤴ Partager</button>
+          <button class="btn2 ghost" type="button" data-menu>⌂ Accueil</button>
+        </div>
+      </header>
+
+      <div class="hub-cols">
+        <section class="panel theme-stats" id="themeStats" aria-labelledby="themeStatsH">
+          <div class="panel-h"><h3 id="themeStatsH">📊 Réussite par domaine</h3></div>
+          <div id="themeStatsList"></div>
+        </section>
+        <section class="panel board" id="resBoard" aria-labelledby="resBoardH">
+          <div class="panel-h"><h3 id="resBoardH">🏆 Classement</h3></div>
+          <div class="rank-line" id="resRank"></div>
+          <ol id="resBoardList"></ol>
+          <div class="board-src" id="resBoardSrc"></div>
+        </section>
       </div>
-      <div class="res-actions">
-        <button class="btn2 primary" id="replayBtn" type="button">↻ Rejouer</button>
-        <button class="btn2 ghost" id="shareBtn" type="button">⤴ Partager mon score</button>
-        <button class="btn2 ghost" type="button" data-menu>⌂ Menu</button>
-      </div>
-      <section class="board" id="resBoard" aria-labelledby="resBoardH">
-        <div class="board-h"><h3 id="resBoardH">🏆 Classement</h3></div>
-        <div class="rank-line" id="resRank"></div>
-        <ol id="resBoardList"></ol>
-        <div class="board-src" id="resBoardSrc"></div>
-      </section>
-      <section class="theme-stats" id="themeStats" aria-labelledby="themeStatsH">
-        <h3 id="themeStatsH">📊 Réussite par domaine</h3>
-        <div id="themeStatsList"></div>
-      </section>
+
       <section class="review" id="review" aria-labelledby="reviewTitle">
         <div class="review-h">
           <h3 id="reviewTitle">Révision des erreurs</h3>
