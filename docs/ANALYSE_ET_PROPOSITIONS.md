@@ -3,6 +3,17 @@
 > **Objet** : bilan du jeu de révision « Pilotage de la maintenance du SI » (version en ligne sur GitHub Pages), confronté au cours, au cas fil rouge et aux assets Kenney fournis.
 > **Livrables associés** : ce document + `docs/questions-proposees.js` (60 nouvelles questions prêtes à fusionner).
 
+> ### ✅ Mise à jour — corrections appliquées dans `index.html`
+> - **Biais de longueur** : la bonne réponse n'est plus la plus longue que dans **15 %** des questions (contre 78 %). Le contrôle est automatisé avec `node tools/check-bank.js`.
+> - **Couverture** : les 60 questions proposées sont intégrées, soit **160 questions dans 12 domaines** classés dans l'ordre des modules. Les niveaux de l'Aventure utilisent aussi les nouveaux domaines.
+> - **Distracteurs absurdes** remplacés par des erreurs plausibles ; **doublons ransomware** remplacés (snapshot sur la même baie, plan annuel du cas) ; **explication inexacte** sur les dépendances corrigée.
+> - **Chrono adapté** (30 s si `d === 3`) et **écran « Révision des erreurs »**, avec la slide à revoir et un bouton « Rejouer mes erreurs ».
+> - **Mobile portrait** : la vue de l'Aventure est zoomée ×1,6 (canvas de 352 × 317 px au lieu de 346 × 195 px sur un écran de 390 px).
+> - **Three.js supprimé** : la sphère est redessinée en Canvas 2D (−670 Ko, plus aucune dépendance JavaScript externe).
+> - **Rangs** alignés sur le cours (Technicien N1 → Directeur de crise) et **README** mis à jour.
+>
+> La suite de ce document décrit l'état **avant** ces corrections. Les idées des sections 6 à 8 (P1 à P3) restent à réaliser.
+
 ---
 
 ## 1. Résumé en 30 secondes

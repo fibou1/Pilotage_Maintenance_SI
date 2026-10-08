@@ -1,5 +1,6 @@
 // ======================================================================
-// QUESTIONS PROPOSÉES — à fusionner dans index.html (objet BANK / THEMES)
+// QUESTIONS PROPOSÉES — ✅ DÉJÀ INTÉGRÉES dans index.html (archive de référence)
+// La version à jour se trouve dans index.html (var BANK) ; vérification : node tools/check-bank.js
 // Format identique : {q, a:[4], c, e}  +  champs optionnels proposés :
 //   d   : difficulté 1 = facile · 2 = moyen · 3 = piège / calcul
 //   ref : renvoi au support (slide du cours « Pilotage maintenance » ou du cas)
