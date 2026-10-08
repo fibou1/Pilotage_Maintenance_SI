@@ -261,6 +261,16 @@ python3 -m http.server 8000
 
 Ajoute `?debug` à l'adresse pour afficher les zones de collision de l'Aventure.
 
+### Publier une mise à jour (important)
+
+GitHub Pages autorise les navigateurs à garder les fichiers en cache. Pour que tous les joueurs reçoivent **en même temps** le nouveau `index.html` et les nouveaux CSS/JS, change le numéro de version à chaque mise à jour publiée :
+
+```bash
+node tools/set-version.js 2.2.0
+```
+
+Le script ajoute `?v=2.2.0` à tous les fichiers CSS/JS dans `index.html`. Le contrôle automatique de GitHub échoue si un fichier a été oublié.
+
 ### Versions
 
 L'historique des versions est dans [`CHANGELOG.md`](CHANGELOG.md). Chaque version publiée porte un **tag git** (`v2.0.0`…).

@@ -22,7 +22,14 @@ jobs:
         run: node tools/check-bank.js
       - name: Fichiers référencés par index.html
         run: |
-          for f in $(grep -oE '(src|href)="[^"#:]+"' index.html | sed -E 's/^(src|href)="//; s/"$//'); do
+          for f in $(grep -oE '(src|href)="[^"#:]+"' index.html | sed -E 's/^(src|href)="//; s/"$//; s/\?.*$//'); do
             test -f "$f" || { echo "Fichier manquant : $f"; exit 1; }
           done
           echo "Tous les fichiers référencés existent."
+      - name: Anti-cache (même version sur tous les CSS/JS)
+        run: |
+          v=$(grep -oE '<meta name="version" content="[^"]+"' index.html | sed -E 's/.*content="//; s/"$//')
+          refs=$(grep -oE '(src|href)="[^"#:]+\.(css|js)(\?v=[^"]*)?"' index.html)
+          bad=$(echo "$refs" | grep -v "?v=$v\"" || true)
+          if [ -n "$bad" ]; then echo "Version anti-cache absente ou différente de $v :"; echo "$bad"; echo "→ lancer : node tools/set-version.js X.Y.Z"; exit 1; fi
+          echo "Les $(echo "$refs" | wc -l) fichiers CSS/JS portent la version $v."
