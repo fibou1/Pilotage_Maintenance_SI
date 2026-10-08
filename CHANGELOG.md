@@ -2,6 +2,15 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Les versions publiées portent un tag git.
 
+## [2.1.1] — 2026-10-08
+
+### Corrigé
+- **Clic sur une matière sans effet et page sans style** juste après une mise à jour : le navigateur gardait en cache les anciens fichiers CSS/JS alors que `index.html` était déjà le nouveau. Chaque fichier CSS/JS porte maintenant un numéro de version (`?v=2.1.1`) : à chaque mise à jour, le navigateur recharge forcément les bons fichiers.
+
+### Ajouté
+- `tools/set-version.js` : change ce numéro de version en une commande.
+- Contrôle automatique sur GitHub : échoue si un fichier CSS/JS n'a pas la bonne version.
+
 ## [2.1.0] — 2026-10-08
 
 Refonte de l'interface des menus.
