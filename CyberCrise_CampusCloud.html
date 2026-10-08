@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body style="margin:0">
+<title>CyberCrise CampusCloud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: arcade révision — menace 3D au centre, 4 réponses autour, HUD score/combo/vies. Identité ink-plum + violet électrique. */
+:root{
+  --bg:#09060f; --bg2:#110a1c; --surface:#160f24; --surface2:#1f1531; --line:rgba(176,139,230,0.16);
+  --fg:#f1ebf8; --fg-dim:#b6a4d0; --fg-faint:#6d5c86;
+  --crit:#ff2e6a; --warn:#ffab2e; --ok:#2ef0a6; --ok-glow:#2ef0a655; --crit-glow:#ff2e6a55;
+  --accent:#b06bff; --accent-dim:#6a37b8;
+  --theme:#b06bff; --theme-dim:#6a37b8;
+  --font-hud:'Chakra Petch','IBM Plex Mono',ui-monospace,monospace;
+  --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --font-body:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--font-body);color:var(--fg);overflow-x:hidden;
+  background:
+    radial-gradient(1100px 650px at 12% -8%, #3a1570 0%, transparent 56%),
+    radial-gradient(900px 600px at 112% 6%, #5a1240 0%, transparent 54%),
+    radial-gradient(900px 600px at 50% 120%, #1a0e3a 0%, transparent 60%),
+    var(--bg);
+  -webkit-font-smoothing:antialiased;min-height:100%;}
+#bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 0%, transparent 56%, rgba(0,0,0,.55) 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 2px, transparent 2px 4px);}
+.stage{position:relative;z-index:1;max-width:1000px;margin:0 auto;min-height:100%;
+  padding:18px 18px calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
+.hud-font{font-family:var(--font-hud)}
+
+/* ---------- screens ---------- */
+.screen{display:none;flex:1;flex-direction:column}
+.screen.active{display:flex}
+
+/* ---------- title ---------- */
+.title-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px;padding:20px 0}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+.bigtitle{font-family:var(--font-hud);font-weight:700;font-size:clamp(2.4rem,9vw,4.8rem);line-height:.95;margin:0;
+  letter-spacing:.01em;text-wrap:balance;text-shadow:0 0 40px #b06bff55}
+.bigtitle b{color:var(--accent)}
+.subtitle{color:var(--fg-dim);max-width:46ch;line-height:1.6;font-size:1.02rem}
+.start-btn{font-family:var(--font-hud);font-weight:700;font-size:1.15rem;letter-spacing:.04em;cursor:pointer;
+  border:none;border-radius:14px;padding:16px 38px;color:#140a22;
+  background:linear-gradient(180deg,#c88bff,var(--accent));box-shadow:0 0 40px -6px var(--accent),0 10px 30px -12px #000;
+  transition:transform .15s, box-shadow .3s}
+.start-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 0 56px -4px var(--accent)}
+.start-btn:active{transform:translateY(0)}
+.title-meta{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.chip{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-dim);
+  border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:#ffffff08}
+.best-line{font-family:var(--font-hud);font-size:14px;color:var(--fg-faint)}
+.best-line b{color:var(--ok)}
+.themes-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:620px}
+.trow-item{font-family:var(--font-mono);font-size:11px;color:var(--fg-dim);border:1px solid var(--line);
+  border-left:3px solid var(--theme);border-radius:8px;padding:5px 10px}
+
+/* ---------- HUD (game) ---------- */
+.hud{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;margin-bottom:14px}
+.hud-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.lives{display:flex;gap:5px}
+.life{width:16px;height:16px;border-radius:4px;background:var(--crit);box-shadow:0 0 10px var(--crit-glow);transition:opacity .3s, transform .3s}
+.life.lost{opacity:.18;background:var(--fg-faint);box-shadow:none;transform:scale(.82)}
+.hud-stat{font-family:var(--font-hud);font-size:13px;color:var(--fg-faint);letter-spacing:.04em}
+.hud-stat b{color:var(--fg);font-size:17px;font-variant-numeric:tabular-nums}
+.combo{font-family:var(--font-hud);font-weight:700;font-size:16px;color:var(--warn);min-width:48px;text-align:center;
+  transition:transform .18s; opacity:.4}
+.combo.on{opacity:1}
+.combo.bump{transform:scale(1.35)}
+.wave-tag{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--theme);
+  border:1px solid var(--theme-dim);background:#b06bff12;border-radius:999px;padding:5px 11px}
+.scorebox{font-family:var(--font-hud);text-align:right}
+.scorebox .s{font-size:26px;font-weight:700;color:var(--fg);font-variant-numeric:tabular-nums;line-height:1}
+.scorebox .l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint)}
+
+/* timer bar */
+.timerbar{height:5px;border-radius:3px;background:#ffffff0f;overflow:hidden;margin-bottom:16px}
+.timerbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--theme),#e5b3ff);transition:width .1s linear}
+.timerbar.low i{background:linear-gradient(90deg,var(--crit),#ff86a9)}
+
+/* ---------- arena ---------- */
+.arena{flex:1;display:flex;flex-direction:column;align-items:center;gap:18px}
+.threat{position:relative;width:min(260px,52vw);height:min(260px,52vw);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#core{width:100%;height:100%}
+.core-fallback{position:absolute;inset:14%;border-radius:28% 72% 60% 40%/44% 36% 64% 56%;
+  background:radial-gradient(circle at 35% 30%, #e5b3ff, var(--theme) 55%, var(--theme-dim));
+  box-shadow:0 0 60px -6px var(--theme);animation:morph 6s ease-in-out infinite, spin 14s linear infinite}
+@keyframes morph{0%,100%{border-radius:28% 72% 60% 40%/44% 36% 64% 56%}50%{border-radius:66% 34% 40% 60%/58% 60% 40% 42%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.threat-tag{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-family:var(--font-mono);
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint);white-space:nowrap}
+
+.question{font-family:var(--font-hud);font-weight:600;font-size:clamp(1.15rem,3.6vw,1.6rem);text-align:center;
+  line-height:1.3;text-wrap:balance;max-width:34ch;margin:0 auto}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:720px}
+@media(max-width:560px){.answers{grid-template-columns:1fr}}
+.ans{font-family:var(--font-body);font-size:15px;text-align:left;cursor:pointer;color:var(--fg);
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 16px;
+  display:flex;align-items:center;gap:12px;transition:transform .12s, border-color .2s, background .2s, box-shadow .2s;min-width:0}
+.ans:hover:not(:disabled){transform:translateY(-2px);border-color:var(--theme);box-shadow:0 10px 26px -16px var(--theme)}
+.ans:disabled{cursor:default}
+.ans .k{font-family:var(--font-hud);font-weight:700;font-size:13px;width:26px;height:26px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;border-radius:7px;background:#ffffff0d;color:var(--theme)}
+.ans.correct{border-color:var(--ok);background:#2ef0a614;box-shadow:0 0 30px -10px var(--ok)}
+.ans.correct .k{background:var(--ok);color:#06241a}
+.ans.wrong{border-color:var(--crit);background:#ff2e6a14}
+.ans.wrong .k{background:var(--crit);color:#2a0712}
+.ans.dim{opacity:.4}
+
+/* explanation */
+.explain{max-width:640px;margin:2px auto 0;border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.55;
+  border:1px solid var(--line);background:var(--surface2);display:none;align-items:flex-start;gap:12px}
+.explain.show{display:flex;animation:pop .35s ease}
+.explain .vr{font-family:var(--font-hud);font-weight:700;white-space:nowrap;flex-shrink:0}
+.explain.good .vr{color:var(--ok)} .explain.bad .vr{color:var(--crit)}
+.explain .tx{color:var(--fg-dim)}
+.next-btn{font-family:var(--font-hud);font-weight:700;letter-spacing:.03em;cursor:pointer;border:none;border-radius:12px;
+  padding:13px 26px;color:#140a22;background:linear-gradient(180deg,#c88bff,var(--accent));margin:4px auto 0;
+  box-shadow:0 8px 24px -12px var(--accent);display:none}
+.next-btn.show{display:block;animation:pop .3s ease}
+@keyframes pop{0%{transform:scale(.96);opacity:.4}100%{transform:scale(1);opacity:1}}
+
+/* points float */
+.float{position:fixed;z-index:40;font-family:var(--font-hud);font-weight:700;font-size:28px;pointer-events:none;
+  color:var(--ok);text-shadow:0 0 20px var(--ok-glow);animation:floatup 1s ease-out forwards}
+@keyframes floatup{0%{opacity:0;transform:translate(-50%,0) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-70px) scale(1.1)}}
+
+/* wave banner */
+.wavebanner{position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0}
+.wavebanner.show{animation:waveb 1.5s ease}
+.wavebanner .inner{text-align:center}
+.wavebanner .wn{font-family:var(--font-mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--theme)}
+.wavebanner .wt{font-family:var(--font-hud);font-weight:700;font-size:clamp(2rem,7vw,3.4rem);color:var(--fg);text-shadow:0 0 40px var(--theme)}
+@keyframes waveb{0%{opacity:0;transform:scale(1.3)}20%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(.96)}}
+
+body.shake{animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-6px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,2px)}}
+
+/* ---------- results ---------- */
+.results{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:20px 0}
+.rank-badge{font-family:var(--font-hud);font-weight:700;font-size:clamp(1.8rem,6vw,2.8rem);color:var(--accent);
+  text-shadow:0 0 36px var(--accent);text-wrap:balance}
+.res-score{font-family:var(--font-hud);font-weight:700;font-size:clamp(3rem,13vw,6rem);line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+.res-score small{font-size:.28em;color:var(--fg-faint);letter-spacing:.1em}
+.res-stats{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.rstat{font-family:var(--font-hud);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:110px;background:var(--surface)}
+.rstat .v{font-size:24px;font-weight:700;color:var(--fg);font-variant-numeric:tabular-nums}
+.rstat .l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint);margin-top:3px}
+.rstat.best .v{color:var(--ok)}
+.res-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.btn2{font-family:var(--font-hud);font-weight:700;cursor:pointer;border-radius:12px;padding:13px 24px;font-size:15px;transition:transform .15s,border-color .2s}
+.btn2:hover{transform:translateY(-2px)}
+.btn2.primary{border:none;color:#140a22;background:linear-gradient(180deg,#c88bff,var(--accent));box-shadow:0 8px 24px -12px var(--accent)}
+.btn2.ghost{background:var(--surface);border:1px solid var(--line);color:var(--fg)}
+.foot{font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);text-align:center;padding-top:14px;letter-spacing:.04em}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:80;opacity:0;
+  font-family:var(--font-hud);font-size:14px;background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--ok);
+  color:var(--fg);border-radius:10px;padding:11px 16px;transition:opacity .3s, transform .3s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (prefers-reduced-motion: reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+</style>
+
+<canvas id="bgfx" aria-hidden="true"></canvas>
+<div class="wavebanner" id="waveBanner"><div class="inner"><div class="wn" id="wbNum"></div><div class="wt" id="wbTitle"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<div class="stage">
+
+  <!-- TITLE -->
+  <section class="screen active" id="scrTitle">
+    <div class="title-wrap">
+      <div class="eyebrow">Révision interactive · Pilotage de la maintenance du SI</div>
+      <h1 class="bigtitle">CYBER<b>CRISE</b></h1>
+      <p class="subtitle">Neutralise les menaces en répondant juste. Enchaîne les bonnes réponses pour faire monter ton combo et ton score. Tu révises tout le cours CampusCloud, en mode arcade.</p>
+      <div class="themes-row" id="themesRow"></div>
+      <button class="start-btn" id="startBtn">▶ Lancer la mission</button>
+      <div class="best-line" id="bestLine"></div>
+      <div class="title-meta">
+        <span class="chip">8 domaines</span>
+        <span class="chip" id="qCountChip">0 questions</span>
+        <span class="chip">Score &amp; combo</span>
+        <span class="chip">GitHub Pages ready</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section class="screen" id="scrGame">
+    <div class="hud">
+      <div class="hud-left">
+        <div class="lives" id="lives"></div>
+        <span class="wave-tag" id="waveTag">—</span>
+        <span class="combo" id="combo">x1</span>
+      </div>
+      <div class="scorebox"><div class="s" id="score">0</div><div class="l">Score</div></div>
+    </div>
+    <div class="timerbar" id="timerbar"><i id="timerfill"></i></div>
+
+    <div class="arena">
+      <div class="threat">
+        <canvas id="core"></canvas>
+        <div class="threat-tag" id="threatTag">MENACE DÉTECTÉE</div>
+      </div>
+      <h2 class="question" id="question">…</h2>
+      <div class="answers" id="answers"></div>
+      <div class="explain" id="explain"><span class="vr" id="exVerdict"></span><span class="tx" id="exText"></span></div>
+      <button class="next-btn" id="nextBtn">Continuer ▶</button>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="screen" id="scrResults">
+    <div class="results">
+      <div class="eyebrow">Mission terminée</div>
+      <div class="rank-badge" id="rankBadge">—</div>
+      <div class="res-score"><span id="finalScore">0</span><small> PTS</small></div>
+      <div class="res-stats">
+        <div class="rstat"><div class="v" id="rAcc">0%</div><div class="l">Précision</div></div>
+        <div class="rstat"><div class="v" id="rCombo">x0</div><div class="l">Meilleur combo</div></div>
+        <div class="rstat best"><div class="v" id="rBest">0</div><div class="l">Record</div></div>
+      </div>
+      <div class="res-actions">
+        <button class="btn2 primary" id="replayBtn">↻ Rejouer</button>
+        <button class="btn2 ghost" id="shareBtn">⤴ Partager mon score</button>
+      </div>
+      <div class="foot">CampusCloud · Pilotage de la maintenance du SI — révise, partage, bats ton record.</div>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ================= QUESTION BANK (tout le cours) =================
+// theme: {name, color}
+var THEMES = [
+  {id:"maint",  name:"Maintenance du SI",      color:"#b06bff"},
+  {id:"dispo",  name:"Disponibilité & SLA",    color:"#36c7d6"},
+  {id:"bia",    name:"BIA · RTO / RPO",        color:"#ffab2e"},
+  {id:"pcapra", name:"PCA vs PRA",             color:"#2ef0a6"},
+  {id:"incident",name:"Gestion d'incident",    color:"#ff2e6a"},
+  {id:"cab",    name:"Changement & CAB",       color:"#7a8cff"},
+  {id:"backup", name:"Sauvegardes",            color:"#ff7edb"},
+  {id:"supervision",name:"Supervision & dépendances", color:"#9be03a"}
+];
+
+var BANK = {
+maint:[
+  {q:"La maintenance corrective intervient…", a:["avant la panne, par prévention","après la panne, pour rétablir le service","pour ajouter une fonctionnalité","pour archiver les logs"], c:1, e:"Corrective = on répare après qu'un incident soit survenu."},
+  {q:"La maintenance préventive sert à…", a:["réparer après incident","anticiper et éviter les pannes","ajouter une feature","supprimer des utilisateurs"], c:1, e:"Préventive = on agit avant la panne (mises à jour, contrôles planifiés)."},
+  {q:"La maintenance évolutive, c'est…", a:["corriger un bug urgent","faire évoluer / améliorer le SI","restaurer une sauvegarde","isoler une VM"], c:1, e:"Évolutive = on fait évoluer le système (nouvelles capacités, montées de version)."},
+  {q:"ITIL est…", a:["un langage de programmation","un cadre de bonnes pratiques de gestion des services IT","un antivirus","un hyperviseur"], c:1, e:"ITIL = référentiel de bonnes pratiques pour gérer les services informatiques."},
+  {q:"« Piloter la maintenance » vise surtout à…", a:["coder plus vite","décider, arbitrer et prioriser les interventions","remplacer le matériel","supprimer la documentation"], c:1, e:"Le pilotage, c'est la décision et l'arbitrage sous contrainte, pas la technique pure."}
+],
+dispo:[
+  {q:"Un SLA, c'est…", a:["un accord sur le niveau de service (engagement)","un serveur de secours","un script de sauvegarde","un pare-feu"], c:0, e:"SLA = Service Level Agreement : l'engagement contractuel sur le niveau de service."},
+  {q:"Une disponibilité de 99,9 % représente environ…", a:["~8h45 d'indispo par an","~3 jours par an","~5 min par an","aucune indispo"], c:0, e:"99,9 % ≈ 8h46 d'indisponibilité par an. Chaque « 9 » en plus divise par ~10."},
+  {q:"Le MTTR mesure…", a:["le temps moyen entre deux pannes","le temps moyen de réparation / rétablissement","le taux d'erreur","le débit réseau"], c:1, e:"MTTR = Mean Time To Repair : vitesse de rétablissement. Plus il est bas, mieux c'est."},
+  {q:"Le MTBF mesure…", a:["le temps moyen entre deux pannes","le temps de réparation","la durée d'une sauvegarde","la latence réseau"], c:0, e:"MTBF = Mean Time Between Failures : fiabilité. Plus il est haut, mieux c'est."},
+  {q:"Sur un dashboard, la dispo de Moodle tombe à 4 %. C'est…", a:["normal","critique : service quasi inaccessible","une amélioration","sans impact"], c:1, e:"4 % = quasi personne ne peut accéder. Seuil rouge, incident majeur."},
+  {q:"Différence SLO / SLA ?", a:["ce sont les mêmes","SLO = objectif interne, SLA = engagement contractuel","SLO est contractuel","SLA est une métrique brute"], c:1, e:"Le SLO est la cible qu'on se fixe en interne ; le SLA est l'engagement envers le client."}
+],
+bia:[
+  {q:"Le BIA (Business Impact Analysis) sert à…", a:["coder l'application","identifier les activités vitales et leurs impacts","faire les sauvegardes","surveiller le CPU"], c:1, e:"Le BIA repère ce qui est critique et ce que coûte son arrêt : point de départ du PRA."},
+  {q:"Le RTO, c'est…", a:["la perte de données max acceptable","le délai max pour rétablir le service","le nombre de serveurs","le coût du projet"], c:1, e:"RTO = Recovery Time Objective : en combien de temps on doit être de nouveau debout."},
+  {q:"Le RPO, c'est…", a:["le délai de reprise","la quantité max de données qu'on accepte de perdre","le temps de sauvegarde","la latence"], c:1, e:"RPO = Recovery Point Objective : jusqu'où on peut remonter sans perte inacceptable."},
+  {q:"Un RPO de 1 h signifie…", a:["reprise en 1 h","on tolère au maximum 1 h de données perdues","sauvegarde une fois par jour","1 h d'indisponibilité"], c:1, e:"RPO 1 h → il faut des sauvegardes au moins toutes les heures."},
+  {q:"L'ordre logique du raisonnement PRA est…", a:["Stratégie → BIA → RTO","BIA → impacts → RTO/RPO → stratégie → preuves","Preuves → BIA → impacts","RTO → BIA → impacts"], c:1, e:"On part des activités vitales (BIA) pour fixer des objectifs chiffrés, puis la stratégie, puis la preuve."},
+  {q:"Un RTO très court impose…", a:["peu de moyens","des moyens de reprise rapides, donc plus coûteux","aucune sauvegarde","rien de particulier"], c:1, e:"Plus on veut reprendre vite, plus il faut investir (redondance, réplication…)."}
+],
+pcapra:[
+  {q:"Le PCA, c'est…", a:["Plan de Continuité d'Activité : maintenir pendant la crise","Plan de Reprise après sinistre","un pare-feu","une sauvegarde"], c:0, e:"PCA = on garde l'activité qui tourne, même en mode dégradé, pendant l'incident."},
+  {q:"Le PRA, c'est…", a:["maintenir l'activité en mode dégradé","Plan de Reprise d'Activité : rétablir après sinistre","un SLA","un dashboard"], c:1, e:"PRA = on reconstruit et on rétablit le service après le sinistre."},
+  {q:"Le « mode dégradé » signifie…", a:["tout est coupé","service réduit mais activité maintenue","service nominal","restauration terminée"], c:1, e:"On continue avec des moyens réduits plutôt que de tout arrêter."},
+  {q:"Pendant l'incident CampusCloud, le PCA permet de…", a:["rallumer toutes les VM d'un coup","maintenir cours et inscriptions en attendant le PRA","supprimer les logs","ignorer les étudiants"], c:1, e:"Le PCA tient l'université debout pendant que l'équipe travaille sur le PRA."},
+  {q:"PCA et PRA sont…", a:["opposés","complémentaires : continuité d'abord, reprise ensuite","identiques","inutiles"], c:1, e:"Le PCA maintient, le PRA rétablit. Les deux se complètent dans une crise."}
+],
+incident:[
+  {q:"Un incident classé P1, c'est…", a:["mineur","critique : impact majeur, priorité maximale","une amélioration","une tâche planifiée"], c:1, e:"P1 = priorité la plus haute, on mobilise tout de suite."},
+  {q:"Le bon ordre de gestion d'une crise ransomware est…", a:["Restaurer d'abord","Isoler → Maintenir → Prouver → Restaurer","Communiquer puis ignorer","Tout rallumer"], c:1, e:"On isole, on maintient (PCA), on prouve que c'est sain, puis on restaure (PRA)."},
+  {q:"Première action face à un ransomware sur une VM ?", a:["payer la rançon","isoler / confiner pour stopper la propagation","tout redémarrer","supprimer les preuves"], c:1, e:"On isole d'abord pour empêcher la contagion vers les autres systèmes."},
+  {q:"Pourquoi ne pas supprimer les logs pendant l'incident ?", a:["pour gagner de la place","pour préserver les preuves et la traçabilité","pour accélérer","aucune raison"], c:1, e:"Les logs servent à l'investigation et à la traçabilité : on les conserve."},
+  {q:"Le rôle de l'Incident Manager est de…", a:["coder le correctif","coordonner, arbitrer et trancher les GO/NO-GO","accueillir les étudiants","facturer la prestation"], c:1, e:"L'Incident Manager pilote : il décide, il ne fait pas la technique à la place des équipes."},
+  {q:"La « cellule de crise » désigne…", a:["une salle serveur","l'équipe réunie qui pilote la réponse","une sauvegarde","un SLA"], c:1, e:"C'est l'équipe mobilisée (coordination, sécu, technique, com) pendant la crise."}
+],
+cab:[
+  {q:"Le CAB, c'est…", a:["Change Advisory Board : comité qui valide les changements","un câble réseau","une sauvegarde","un serveur"], c:0, e:"CAB = comité consultatif qui arbitre et autorise les changements."},
+  {q:"Une « fenêtre de changement » est…", a:["une fenêtre Windows","un créneau planifié pour appliquer un changement","un bug","un SLA"], c:1, e:"C'est le créneau choisi (souvent en heures creuses) pour intervenir avec le moins d'impact."},
+  {q:"Déployer « par pilote et par vagues » sert à…", a:["aller plus vite d'un coup","limiter le risque en testant progressivement","éviter la sauvegarde","ignorer le rollback"], c:1, e:"On valide sur un petit périmètre avant de généraliser : le risque reste maîtrisé."},
+  {q:"Un « seuil de rollback » est…", a:["une heure de fin","une condition qui déclenche le retour arrière","un nombre de serveurs","un coût"], c:1, e:"C'est le signal objectif (erreurs, latence…) qui dit : on annule et on revient en arrière."},
+  {q:"Le GO / NO-GO sert à…", a:["décorer la présentation","décider formellement de continuer ou d'arrêter","coder","communiquer uniquement"], c:1, e:"C'est le point de décision tracé : on avance ou on stoppe, avec un responsable."},
+  {q:"Un plan de rollback doit être…", a:["improvisé le jour J","documenté, testé et chronométré","interdit","gardé secret"], c:1, e:"Un rollback fiable est préparé et testé à l'avance, pas inventé sous pression."}
+],
+backup:[
+  {q:"La règle 3-2-1 de sauvegarde, c'est…", a:["3 serveurs","3 copies, sur 2 supports, dont 1 hors site","3 sauvegardes par jour","1 seule copie suffit"], c:1, e:"3 copies, 2 types de support, 1 copie hors site : résiste à la plupart des sinistres."},
+  {q:"« Une sauvegarde présente n'est pas… »", a:["chère","forcément exploitable / restaurable","récente","chiffrée"], c:1, e:"Tant qu'on n'a pas testé la restauration, une sauvegarde n'est qu'une hypothèse."},
+  {q:"Pourquoi tester une restauration en zone isolée ?", a:["pour gagner du temps","pour vérifier l'intégrité sans réinjecter le compromis","pour le fun","c'est inutile"], c:1, e:"On vérifie que la copie est saine avant de la reconnecter à la production."},
+  {q:"Face à une sauvegarde douteuse en pleine crise, on décide…", a:["GO direct","NO-GO : on ne restaure pas à l'aveugle","de la supprimer","d'attendre 10 jours"], c:1, e:"Restaurer une sauvegarde corrompue peut réinjecter l'attaque : NO-GO."},
+  {q:"Un snapshot, c'est…", a:["une photo instantanée de l'état d'un système à un instant t","un pare-feu","un SLA","un fichier de log"], c:0, e:"Le snapshot capture l'état à un instant précis, utile pour revenir en arrière vite."}
+],
+supervision:[
+  {q:"Dashboard « métier » vs « exploitation » ?", a:["ce sont les mêmes","métier = vision service / impact, exploitation = vision technique","métier = CPU/RAM","exploitation = finances"], c:1, e:"Le métier regarde l'impact service ; l'exploitation regarde les indicateurs techniques."},
+  {q:"Une « panne en cascade » est…", a:["une seule panne isolée","une panne qui en entraîne d'autres par dépendances","une sauvegarde","un rollback"], c:1, e:"Un composant tombe et fait tomber ceux qui dépendent de lui : effet domino."},
+  {q:"Pourquoi cartographier les dépendances ?", a:["pour décorer","pour anticiper les impacts en chaîne d'un changement ou d'une panne","pour coder","pour facturer"], c:1, e:"Connaître les dépendances permet de prévoir ce qui tombera avec quoi."},
+  {q:"Un seuil d'alerte (threshold) sert à…", a:["rien","déclencher une alerte quand une métrique dépasse une limite","sauvegarder","isoler"], c:1, e:"Quand la métrique franchit le seuil, l'alerte part : on détecte tôt."},
+  {q:"Superviser en continu permet surtout de…", a:["ralentir le SI","détecter tôt et réduire le MTTR","perdre des données","ignorer les incidents"], c:1, e:"Plus on détecte tôt, plus on rétablit vite : le MTTR baisse."}
+]
+};
+
+// flatten count
+var TOTAL_Q = 0; THEMES.forEach(function(t){ TOTAL_Q += BANK[t.id].length; });
+
+// ================= helpers =================
+function $(id){ return document.getElementById(id); }
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function setTheme(c){ document.documentElement.style.setProperty("--theme",c);
+  document.documentElement.style.setProperty("--theme-dim", shade(c,-60)); }
+function shade(hex,amt){ var n=parseInt(hex.slice(1),16),r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return "#"+(1<<24|r<<16|g<<8|b).toString(16).slice(1); }
+
+// best score
+var BEST_KEY="cybercrise_best_v1";
+function getBest(){ try{ return parseInt(localStorage.getItem(BEST_KEY)||"0",10)||0; }catch(e){ return 0; } }
+function setBest(v){ try{ localStorage.setItem(BEST_KEY, String(v)); }catch(e){} }
+
+// ================= title screen =================
+var themesRow=$("themesRow");
+THEMES.forEach(function(t){ var el=document.createElement("span"); el.className="trow-item";
+  el.style.borderLeftColor=t.color; el.textContent=t.name; themesRow.appendChild(el); });
+$("qCountChip").textContent = TOTAL_Q+" questions";
+function refreshBestLine(){ var b=getBest(); $("bestLine").innerHTML = b>0 ? "Ton record : <b>"+b.toLocaleString("fr-FR")+" pts</b>" : "Aucun record encore — à toi de jouer."; }
+refreshBestLine();
+
+// ================= 3D core (Three.js, léger) =================
+var core = { ok:false };
+(function(){
+  try{
+    if(!window.THREE){ document.querySelector(".threat").insertAdjacentHTML("beforeend",'<div class="core-fallback"></div>'); return; }
+    var cv=$("core");
+    var rnd=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
+    rnd.setPixelRatio(Math.min(2,devicePixelRatio||1));
+    var sc=new THREE.Scene(), cam=new THREE.PerspectiveCamera(50,1,0.1,100); cam.position.z=4.2;
+    var grp=new THREE.Group(); sc.add(grp);
+    var geo=new THREE.IcosahedronGeometry(1.35,1);
+    var mat=new THREE.MeshBasicMaterial({color:0xb06bff,wireframe:true,transparent:true,opacity:.9});
+    var mesh=new THREE.Mesh(geo,mat); grp.add(mesh);
+    var solid=new THREE.Mesh(new THREE.IcosahedronGeometry(1.15,0), new THREE.MeshBasicMaterial({color:0x2a1150,transparent:true,opacity:.55}));
+    grp.add(solid);
+    // explosion particles
+    var pcount=140, ppos=new Float32Array(pcount*3), pvel=[];
+    for(var i=0;i<pcount;i++){ ppos[i*3]=0;ppos[i*3+1]=0;ppos[i*3+2]=0;
+      var th=Math.random()*6.283, ph=Math.acos(2*Math.random()-1), sp=.04+Math.random()*.11;
+      pvel.push([Math.sin(ph)*Math.cos(th)*sp,Math.sin(ph)*Math.sin(th)*sp,Math.cos(ph)*sp]); }
+    var pg=new THREE.BufferGeometry(); pg.setAttribute("position",new THREE.BufferAttribute(ppos,3));
+    var pmat=new THREE.PointsMaterial({color:0xffffff,size:.06,transparent:true,opacity:0});
+    var pts=new THREE.Points(pg,pmat); sc.add(pts);
+    var exploding=false, et=0;
+    function size(){ var w=cv.clientWidth||220, h=cv.clientHeight||220; rnd.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }
+    var cur=new THREE.Color(0xb06bff), tgt=new THREE.Color(0xb06bff);
+    core.setColor=function(hex){ tgt.set(hex); };
+    core.explode=function(){ if(prefersReduced) return; exploding=true; et=0;
+      var p=pg.attributes.position.array; for(var i=0;i<pcount*3;i++)p[i]=0; pg.attributes.position.needsUpdate=true;
+      pmat.color.copy(cur); pmat.opacity=1; mesh.scale.set(1,1,1); };
+    function loop(){
+      size();
+      cur.lerp(tgt,.08); mat.color.copy(cur);
+      grp.rotation.y+=prefersReduced?0:.006; grp.rotation.x+=prefersReduced?0:.0024;
+      var s=1+Math.sin(Date.now()*.004)*.04; if(!exploding) mesh.scale.set(s,s,s);
+      if(exploding){ et++; var p=pg.attributes.position.array;
+        for(var i=0;i<pcount;i++){ p[i*3]+=pvel[i][0];p[i*3+1]+=pvel[i][1];p[i*3+2]+=pvel[i][2]; }
+        pg.attributes.position.needsUpdate=true; pmat.opacity=Math.max(0,1-et/55);
+        var ms=Math.max(.0001,1-et/18); mesh.scale.set(ms,ms,ms);
+        if(et>58){ exploding=false; mesh.scale.set(1,1,1); } }
+      rnd.render(sc,cam); requestAnimationFrame(loop);
+    }
+    core.ok=true; loop();
+  }catch(e){ try{ document.querySelector(".threat").insertAdjacentHTML("beforeend",'<div class="core-fallback"></div>'); }catch(_){} }
+})();
+
+// ================= background particles (léger) =================
+(function(){
+  var cv=$("bgfx"), ctx=cv.getContext("2d"), W,H,DPR,nodes=[];
+  function resize(){ DPR=Math.min(2,devicePixelRatio||1); W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;
+    cv.style.width=innerWidth+"px";cv.style.height=innerHeight+"px"; }
+  resize(); addEventListener("resize",resize);
+  var N=innerWidth<700?22:40;
+  for(var i=0;i<N;i++)nodes.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0003,vy:(Math.random()-.5)*.0003});
+  function draw(){ ctx.clearRect(0,0,W,H);
+    for(var i=0;i<nodes.length;i++){var n=nodes[i];n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>1)n.vx*=-1;if(n.y<0||n.y>1)n.vy*=-1;}
+    for(var i=0;i<nodes.length;i++)for(var j=i+1;j<nodes.length;j++){var a=nodes[i],b=nodes[j],dx=(a.x-b.x)*W,dy=(a.y-b.y)*H,d=Math.sqrt(dx*dx+dy*dy),lim=130*DPR;
+      if(d<lim){ctx.strokeStyle="rgba(176,107,255,"+(.1*(1-d/lim)).toFixed(3)+")";ctx.lineWidth=DPR*.6;ctx.beginPath();ctx.moveTo(a.x*W,a.y*H);ctx.lineTo(b.x*W,b.y*H);ctx.stroke();}}
+    for(var i=0;i<nodes.length;i++){var n=nodes[i];ctx.fillStyle="rgba(176,107,255,.5)";ctx.beginPath();ctx.arc(n.x*W,n.y*H,DPR*1.3,0,6.283);ctx.fill();}
+    requestAnimationFrame(draw);
+  }
+  if(!prefersReduced) draw(); else cv.style.opacity=".25";
+})();
+
+// ================= game state =================
+var queue=[], qi=0, score=0, combo=0, bestCombo=0, lives=3, correctCount=0, answered=false;
+var timer=null, timeLeft=0, TQ=16; // seconds per question
+var curTheme=null;
+
+function buildQueue(){
+  // waves = themes in order; questions shuffled within theme
+  queue=[];
+  THEMES.forEach(function(t){
+    var qs=shuffle(BANK[t.id]);
+    qs.forEach(function(q,idx){ queue.push({theme:t, q:q, first: idx===0}); });
+  });
+}
+
+function showScreen(id){ ["scrTitle","scrGame","scrResults"].forEach(function(s){ $(s).classList.toggle("active", s===id); }); }
+
+function renderLives(){ var box=$("lives"); box.innerHTML="";
+  for(var i=0;i<3;i++){ var d=document.createElement("div"); d.className="life"+(i>=lives?" lost":""); box.appendChild(d); } }
+
+function startGame(){
+  buildQueue(); qi=0; score=0; combo=0; bestCombo=0; lives=3; correctCount=0;
+  $("score").textContent="0"; renderLives(); updateCombo();
+  showScreen("scrGame"); loadQuestion();
+}
+
+function waveBanner(theme, cb){
+  var wb=$("waveBanner"); $("wbNum").textContent=theme.name.toUpperCase().indexOf("BIA")>=0?"DOMAINE":"DOMAINE";
+  $("wbTitle").textContent=theme.name; $("wbTitle").style.textShadow="0 0 40px "+theme.color;
+  $("wbNum").style.color=theme.color;
+  wb.classList.remove("show"); void wb.offsetWidth; wb.classList.add("show");
+  setTimeout(cb, prefersReduced?50:900);
+}
+
+function loadQuestion(){
+  if(qi>=queue.length || lives<=0){ endGame(); return; }
+  var item=queue[qi]; curTheme=item.theme;
+  setTheme(item.theme.color); if(core.ok&&core.setColor) core.setColor(item.theme.color);
+  $("waveTag").textContent=item.theme.name;
+  $("threatTag").textContent="MENACE · "+item.theme.name.toUpperCase();
+
+  function paint(){
+    answered=false;
+    $("question").textContent=item.q.q;
+    var ansBox=$("answers"); ansBox.innerHTML="";
+    // shuffle answers, track correct
+    var idxs=shuffle([0,1,2,3]);
+    var letters=["A","B","C","D"];
+    idxs.forEach(function(orig,pos){
+      var b=document.createElement("button"); b.className="ans"; b.type="button";
+      b.innerHTML='<span class="k">'+letters[pos]+'</span><span>'+item.q.a[orig]+'</span>';
+      b.addEventListener("click", function(){ answer(orig===item.q.c, b, item, idxs, pos); });
+      ansBox.appendChild(b);
+    });
+    item._order=idxs;
+    $("explain").className="explain"; $("nextBtn").className="next-btn";
+    startTimer();
+  }
+  if(item.first){ waveBanner(item.theme, paint); } else { paint(); }
+}
+
+function startTimer(){
+  clearInterval(timer); timeLeft=TQ*1000; var tb=$("timerbar"), fill=$("timerfill");
+  tb.classList.remove("low"); fill.style.width="100%";
+  var t0=Date.now();
+  timer=setInterval(function(){
+    var el=Date.now()-t0; timeLeft=TQ*1000-el; var pct=Math.max(0,timeLeft/(TQ*1000)*100);
+    fill.style.width=pct+"%"; if(pct<30) tb.classList.add("low");
+    if(timeLeft<=0){ clearInterval(timer); timeout(); }
+  },80);
+}
+
+function floatPoints(x,y,txt,col){
+  var f=document.createElement("div"); f.className="float"; f.textContent=txt; f.style.color=col||"var(--ok)";
+  f.style.left=x+"px"; f.style.top=y+"px"; document.body.appendChild(f);
+  setTimeout(function(){ f.remove(); },1000);
+}
+
+function revealCorrect(item){
+  var btns=$("answers").children, letters=item._order;
+  for(var i=0;i<btns.length;i++){ var orig=letters[i]; btns[i].disabled=true;
+    if(orig===item.q.c) btns[i].classList.add("correct");
+    else btns[i].classList.add("dim");
+  }
+}
+
+function answer(correct, btn, item, idxs, pos){
+  if(answered) return; answered=true; clearInterval(timer);
+  var btns=$("answers").children;
+  for(var i=0;i<btns.length;i++) btns[i].disabled=true;
+  revealCorrect(item);
+  var ex=$("explain"), v=$("exVerdict"), tx=$("exText");
+  if(correct){
+    btn.classList.remove("dim"); btn.classList.add("correct");
+    combo++; if(combo>bestCombo)bestCombo=combo; correctCount++;
+    var mult=Math.min(5,combo); var speedBonus=Math.round(timeLeft/(TQ*1000)*50);
+    var pts=(100+speedBonus)*mult;
+    score+=pts; animScore();
+    if(core.ok&&core.explode) core.explode();
+    var r=btn.getBoundingClientRect(); floatPoints(r.left+r.width/2, r.top, "+"+pts, "var(--ok)");
+    ex.className="explain good show"; v.textContent=combo>=2?("Juste ! x"+mult+" combo"):"Juste !";
+    tx.textContent=item.q.e;
+  } else {
+    btn.classList.remove("dim"); btn.classList.add("wrong");
+    combo=0; lives--; renderLives();
+    if(!prefersReduced){ document.body.classList.remove("shake"); void document.body.offsetWidth; document.body.classList.add("shake"); }
+    ex.className="explain bad show"; v.textContent="Raté —"; tx.textContent=item.q.e;
+  }
+  updateCombo();
+  var nb=$("nextBtn"); nb.textContent = (qi>=queue.length-1||lives<=0)?"Voir le résultat ▶":"Continuer ▶";
+  nb.classList.add("show");
+}
+
+function timeout(){
+  if(answered) return; answered=true;
+  var item=queue[qi]; revealCorrect(item);
+  combo=0; lives--; renderLives(); updateCombo();
+  if(!prefersReduced){ document.body.classList.remove("shake"); void document.body.offsetWidth; document.body.classList.add("shake"); }
+  var ex=$("explain"); ex.className="explain bad show";
+  $("exVerdict").textContent="Trop tard —"; $("exText").textContent=item.q.e;
+  var nb=$("nextBtn"); nb.textContent=(qi>=queue.length-1||lives<=0)?"Voir le résultat ▶":"Continuer ▶"; nb.classList.add("show");
+}
+
+function nextQuestion(){ qi++; loadQuestion(); }
+
+function animScore(){
+  var el=$("score"), from=parseInt(el.textContent.replace(/\D/g,""),10)||0, to=score, t0=null;
+  function f(ts){ if(!t0)t0=ts; var p=Math.min(1,(ts-t0)/400); el.textContent=Math.round(from+(to-from)*p).toLocaleString("fr-FR"); if(p<1)requestAnimationFrame(f); }
+  requestAnimationFrame(f);
+}
+function updateCombo(){ var c=$("combo"); c.textContent="x"+Math.min(5,Math.max(1,combo||1));
+  c.classList.toggle("on", combo>=2);
+  if(combo>=2&&!prefersReduced){ c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); } }
+
+// ================= results =================
+function rankFor(acc){
+  if(acc>=.95) return "RSSI · Directeur de crise";
+  if(acc>=.85) return "Ingénieur résilience";
+  if(acc>=.70) return "Analyste SOC";
+  if(acc>=.50) return "Technicien support";
+  return "Stagiaire — rejoue pour progresser";
+}
+function endGame(){
+  clearInterval(timer);
+  var acc = TOTAL_Q? (correctCount/TOTAL_Q) : 0;
+  var best=getBest(); if(score>best){ best=score; setBest(score); }
+  $("finalScore").textContent=score.toLocaleString("fr-FR");
+  $("rAcc").textContent=Math.round(acc*100)+"%";
+  $("rCombo").textContent="x"+Math.min(5,bestCombo)+" ("+bestCombo+")";
+  $("rBest").textContent=best.toLocaleString("fr-FR");
+  $("rankBadge").textContent=rankFor(acc);
+  refreshBestLine();
+  showScreen("scrResults");
+}
+
+// ================= share =================
+function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){ t.classList.remove("show"); },2400); }
+function share(){
+  var acc=TOTAL_Q?Math.round(correctCount/TOTAL_Q*100):0;
+  var txt="🛡️ CyberCrise CampusCloud — "+score.toLocaleString("fr-FR")+" pts ("+rankFor(correctCount/TOTAL_Q)+", "+acc+"% de réussite). À toi de battre mon score !";
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ toast("Score copié — colle-le où tu veux !"); },function(){ toast(txt); });
+  } else { toast(txt); }
+}
+
+// ================= wiring =================
+$("startBtn").addEventListener("click", startGame);
+$("replayBtn").addEventListener("click", startGame);
+$("shareBtn").addEventListener("click", share);
+$("nextBtn").addEventListener("click", function(){ if(answered) nextQuestion(); });
+document.addEventListener("keydown", function(e){
+  if($("scrGame").classList.contains("active")){
+    if((e.key===" "||e.key==="Enter")&&answered&&$("nextBtn").classList.contains("show")){ e.preventDefault(); nextQuestion(); return; }
+    if(!answered && /^[1-4a-dA-D]$/.test(e.key)){
+      var map={"1":0,"2":1,"3":2,"4":3,"a":0,"b":1,"c":2,"d":3,"A":0,"B":1,"C":2,"D":3};
+      var idx=map[e.key]; var btns=$("answers").children; if(btns[idx]) btns[idx].click();
+    }
+  } else if($("scrTitle").classList.contains("active")){
+    if(e.key===" "||e.key==="Enter"){ e.preventDefault(); startGame(); }
+  }
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1415 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CyberCrise CampusCloud</title>
+<meta name="description" content="Jeu de révision : Pilotage de la maintenance du SI (cas CampusCloud). Mode Quiz arcade et mode Aventure 2D.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: arcade révision — menace 3D au centre (Quiz) ou plateformer 2D (Aventure). Identité ink-plum + violet électrique. */
+:root{
+  --bg:#09060f; --bg2:#110a1c; --surface:#160f24; --surface2:#1f1531; --line:rgba(176,139,230,0.16);
+  --fg:#f1ebf8; --fg-dim:#b6a4d0; --fg-faint:#6d5c86;
+  --crit:#ff2e6a; --warn:#ffab2e; --ok:#2ef0a6; --ok-glow:#2ef0a655; --crit-glow:#ff2e6a55;
+  --accent:#b06bff; --accent-dim:#6a37b8;
+  --theme:#b06bff; --theme-dim:#6a37b8;
+  --font-hud:'Chakra Petch','IBM Plex Mono',ui-monospace,monospace;
+  --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --font-body:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--font-body);color:var(--fg);overflow-x:hidden;
+  background:
+    radial-gradient(1100px 650px at 12% -8%, #3a1570 0%, transparent 56%),
+    radial-gradient(900px 600px at 112% 6%, #5a1240 0%, transparent 54%),
+    radial-gradient(900px 600px at 50% 120%, #1a0e3a 0%, transparent 60%),
+    var(--bg);
+  -webkit-font-smoothing:antialiased;min-height:100%;}
+#bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 0%, transparent 56%, rgba(0,0,0,.55) 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 2px, transparent 2px 4px);}
+.stage{position:relative;z-index:1;max-width:1000px;margin:0 auto;min-height:100%;
+  padding:18px 18px calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
+button{font-family:inherit}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+
+/* ---------- screens (états : TITLE / QUIZ / ADVENTURE / RESULT) ---------- */
+.screen{display:none;flex:1;flex-direction:column}
+.screen.active{display:flex}
+
+/* ---------- title ---------- */
+.title-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px;padding:20px 0}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+.bigtitle{font-family:var(--font-hud);font-weight:700;font-size:clamp(2.4rem,9vw,4.8rem);line-height:.95;margin:0;
+  letter-spacing:.01em;text-wrap:balance;text-shadow:0 0 40px #b06bff55}
+.bigtitle b{color:var(--accent)}
+.subtitle{color:var(--fg-dim);max-width:50ch;line-height:1.6;font-size:1.02rem}
+.mode-row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.mode-card{display:flex;flex-direction:column;align-items:center;gap:6px}
+.mode-card small{font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);letter-spacing:.04em;max-width:24ch}
+.start-btn{font-family:var(--font-hud);font-weight:700;font-size:1.15rem;letter-spacing:.04em;cursor:pointer;
+  border:none;border-radius:14px;padding:16px 34px;color:#140a22;min-width:220px;
+  background:linear-gradient(180deg,#c88bff,var(--accent));box-shadow:0 0 40px -6px var(--accent),0 10px 30px -12px #000;
+  transition:transform .15s, box-shadow .3s}
+.start-btn.alt{background:linear-gradient(180deg,#7cf6cc,var(--ok));box-shadow:0 0 40px -6px var(--ok),0 10px 30px -12px #000;color:#06241a}
+.start-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 0 56px -4px var(--accent)}
+.start-btn.alt:hover{box-shadow:0 0 56px -4px var(--ok)}
+.start-btn:active{transform:translateY(0)}
+.title-meta{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.chip{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-dim);
+  border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:#ffffff08}
+.best-line{font-family:var(--font-hud);font-size:14px;color:var(--fg-faint)}
+.best-line b{color:var(--ok)}
+.themes-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:620px}
+.trow-item{font-family:var(--font-mono);font-size:11px;color:var(--fg-dim);border:1px solid var(--line);
+  border-left:3px solid var(--theme);border-radius:8px;padding:5px 10px}
+
+/* ---------- HUD (quiz + aventure) ---------- */
+.hud{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;margin-bottom:14px}
+.hud-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.lives{display:flex;gap:5px}
+.life{width:16px;height:16px;border-radius:4px;background:var(--crit);box-shadow:0 0 10px var(--crit-glow);transition:opacity .3s, transform .3s}
+.life.lost{opacity:.18;background:var(--fg-faint);box-shadow:none;transform:scale(.82)}
+.hud-stat{font-family:var(--font-hud);font-size:13px;color:var(--fg-faint);letter-spacing:.04em}
+.hud-stat b{color:var(--fg);font-size:17px;font-variant-numeric:tabular-nums}
+.combo{font-family:var(--font-hud);font-weight:700;font-size:16px;color:var(--warn);min-width:48px;text-align:center;
+  transition:transform .18s; opacity:.4}
+.combo.on{opacity:1}
+.combo.bump{transform:scale(1.35)}
+.wave-tag{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--theme);
+  border:1px solid var(--theme-dim);background:#b06bff12;border-radius:999px;padding:5px 11px}
+.crystal-count{font-family:var(--font-hud);font-weight:700;font-size:15px;color:#4cc9ff;letter-spacing:.04em}
+.scorebox{font-family:var(--font-hud);text-align:right}
+.scorebox .s{font-size:26px;font-weight:700;color:var(--fg);font-variant-numeric:tabular-nums;line-height:1}
+.scorebox .l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint)}
+.hud-right{display:flex;align-items:center;gap:14px}
+.menu-btn{font-family:var(--font-hud);font-weight:600;font-size:12px;letter-spacing:.06em;cursor:pointer;color:var(--fg-dim);
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.menu-btn:hover{border-color:var(--theme);color:var(--fg)}
+
+/* timer bar */
+.timerbar{height:5px;border-radius:3px;background:#ffffff0f;overflow:hidden;margin-bottom:16px}
+.timerbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--theme),#e5b3ff);transition:width .1s linear}
+.timerbar.low i{background:linear-gradient(90deg,var(--crit),#ff86a9)}
+
+/* ---------- arena (quiz) ---------- */
+.arena{flex:1;display:flex;flex-direction:column;align-items:center;gap:18px}
+.threat{position:relative;width:min(260px,52vw);height:min(260px,52vw);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#core{width:100%;height:100%}
+.core-fallback{position:absolute;inset:14%;border-radius:28% 72% 60% 40%/44% 36% 64% 56%;
+  background:radial-gradient(circle at 35% 30%, #e5b3ff, var(--theme) 55%, var(--theme-dim));
+  box-shadow:0 0 60px -6px var(--theme);animation:morph 6s ease-in-out infinite, spin 14s linear infinite}
+@keyframes morph{0%,100%{border-radius:28% 72% 60% 40%/44% 36% 64% 56%}50%{border-radius:66% 34% 40% 60%/58% 60% 40% 42%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.threat-tag{position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);font-family:var(--font-mono);
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint);white-space:nowrap}
+
+.question{font-family:var(--font-hud);font-weight:600;font-size:clamp(1.1rem,3.4vw,1.5rem);text-align:center;
+  line-height:1.3;text-wrap:balance;max-width:40ch;margin:0 auto}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:720px}
+@media(max-width:560px){.answers{grid-template-columns:1fr}}
+.ans{font-family:var(--font-body);font-size:15px;text-align:left;cursor:pointer;color:var(--fg);
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;transition:transform .12s, border-color .2s, background .2s, box-shadow .2s;min-width:0}
+.ans:hover:not(:disabled){transform:translateY(-2px);border-color:var(--theme);box-shadow:0 10px 26px -16px var(--theme)}
+.ans:disabled{cursor:default}
+.ans .k{font-family:var(--font-hud);font-weight:700;font-size:13px;width:26px;height:26px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;border-radius:7px;background:#ffffff0d;color:var(--theme)}
+.ans.correct{border-color:var(--ok);background:#2ef0a614;box-shadow:0 0 30px -10px var(--ok)}
+.ans.correct .k{background:var(--ok);color:#06241a}
+.ans.wrong{border-color:var(--crit);background:#ff2e6a14}
+.ans.wrong .k{background:var(--crit);color:#2a0712}
+.ans.dim{opacity:.4}
+
+/* explanation */
+.explain{max-width:640px;width:100%;margin:2px auto 0;border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.55;
+  border:1px solid var(--line);background:var(--surface2);display:none;align-items:flex-start;gap:12px}
+.explain.show{display:flex;animation:pop .35s ease}
+.explain .vr{font-family:var(--font-hud);font-weight:700;white-space:nowrap;flex-shrink:0}
+.explain.good .vr{color:var(--ok)} .explain.bad .vr{color:var(--crit)}
+.explain .tx{color:var(--fg-dim)}
+.next-btn{font-family:var(--font-hud);font-weight:700;letter-spacing:.03em;cursor:pointer;border:none;border-radius:12px;
+  padding:13px 26px;color:#140a22;background:linear-gradient(180deg,#c88bff,var(--accent));margin:4px auto 0;
+  box-shadow:0 8px 24px -12px var(--accent);display:none}
+.next-btn.show{display:block;animation:pop .3s ease}
+@keyframes pop{0%{transform:scale(.96);opacity:.4}100%{transform:scale(1);opacity:1}}
+
+/* points float */
+.float{position:fixed;z-index:90;font-family:var(--font-hud);font-weight:700;font-size:28px;pointer-events:none;
+  color:var(--ok);text-shadow:0 0 20px var(--ok-glow);animation:floatup 1s ease-out forwards}
+@keyframes floatup{0%{opacity:0;transform:translate(-50%,0) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-70px) scale(1.1)}}
+
+/* wave banner */
+.wavebanner{position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0}
+.wavebanner.show{animation:waveb 1.5s ease}
+.wavebanner .inner{text-align:center}
+.wavebanner .wn{font-family:var(--font-mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--theme)}
+.wavebanner .wt{font-family:var(--font-hud);font-weight:700;font-size:clamp(2rem,7vw,3.4rem);color:var(--fg);text-shadow:0 0 40px var(--theme)}
+@keyframes waveb{0%{opacity:0;transform:scale(1.3)}20%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(.96)}}
+
+body.shake{animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-6px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,2px)}}
+
+/* ---------- aventure 2D ---------- */
+.adv-wrap{position:relative;width:100%;max-width:1000px;margin:0 auto;aspect-ratio:16/9;border:1px solid var(--line);border-radius:14px;
+  overflow:hidden;background:#0b0716;box-shadow:0 0 60px -26px var(--theme)}
+#adv{width:100%;height:100%;display:block;image-rendering:crisp-edges;image-rendering:pixelated;touch-action:none}
+.ov{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
+  background:rgba(9,6,15,.8);padding:10px 16px}
+.ov.show{display:flex;animation:pop .3s ease}
+.ov .k{font-family:var(--font-mono);font-size:clamp(9px,1.6vw,12px);letter-spacing:.2em;text-transform:uppercase;color:var(--theme)}
+.ov .t{font-family:var(--font-hud);font-weight:700;font-size:clamp(1.1rem,4.4vw,2.4rem);line-height:1.05;text-wrap:balance}
+.ov .d{color:var(--fg-dim);font-size:clamp(11px,1.7vw,15px);line-height:1.5;max-width:52ch}
+.ov .hint{font-family:var(--font-mono);font-size:clamp(9px,1.4vw,11px);color:var(--fg-faint)}
+.ov .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:2px}
+.ov .btn2{padding:clamp(8px,1.6vw,13px) clamp(14px,3vw,24px);font-size:clamp(12px,1.8vw,15px)}
+.advmsg{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:5;font-family:var(--font-hud);font-weight:600;
+  font-size:clamp(11px,1.8vw,14px);background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--theme);
+  border-radius:10px;padding:7px 12px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.advmsg.show{opacity:1}
+.qmodal{position:fixed;inset:0;z-index:70;display:none;background:rgba(9,6,15,.94);overflow:auto;padding:16px calc(16px + env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) 16px}
+.qmodal.show{display:flex}
+.qinner{width:100%;max-width:720px;margin:auto;display:flex;flex-direction:column;align-items:center;gap:14px}
+.qinner .crystal-ico{width:44px;height:44px;border-radius:12px;background:radial-gradient(circle at 35% 30%,#bfeaff,#4cc9ff 60%,#1b6a99);
+  box-shadow:0 0 36px -4px #4cc9ff;transform:rotate(45deg) scale(.7)}
+
+/* contrôles tactiles */
+.touch{display:none;position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:0 16px;
+  justify-content:space-between;align-items:flex-end;z-index:35;pointer-events:none}
+.touch .grp{display:flex;gap:14px}
+.tbtn{pointer-events:auto;width:78px;height:78px;border-radius:50%;border:1px solid var(--line);background:rgba(31,21,49,.88);
+  color:var(--fg);font:700 30px var(--font-hud);display:flex;align-items:center;justify-content:center;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+.tbtn.on{background:var(--accent);color:#140a22}
+body.is-touch #scrAdv.active .touch{display:flex}
+body.is-touch #scrAdv.active{padding-bottom:110px}
+.adv-help{font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);text-align:center;margin-top:12px;letter-spacing:.03em}
+body.is-touch .adv-help{display:none}
+
+/* ---------- results ---------- */
+.results{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:20px 0}
+.rank-badge{font-family:var(--font-hud);font-weight:700;font-size:clamp(1.8rem,6vw,2.8rem);color:var(--accent);
+  text-shadow:0 0 36px var(--accent);text-wrap:balance}
+.res-score{font-family:var(--font-hud);font-weight:700;font-size:clamp(3rem,13vw,6rem);line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+.res-score small{font-size:.28em;color:var(--fg-faint);letter-spacing:.1em}
+.res-stats{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.rstat{font-family:var(--font-hud);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:110px;background:var(--surface)}
+.rstat .v{font-size:24px;font-weight:700;color:var(--fg);font-variant-numeric:tabular-nums}
+.rstat .l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint);margin-top:3px}
+.rstat.best .v{color:var(--ok)}
+.res-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.btn2{font-family:var(--font-hud);font-weight:700;cursor:pointer;border-radius:12px;padding:13px 24px;font-size:15px;transition:transform .15s,border-color .2s}
+.btn2:hover{transform:translateY(-2px)}
+.btn2.primary{border:none;color:#140a22;background:linear-gradient(180deg,#c88bff,var(--accent));box-shadow:0 8px 24px -12px var(--accent)}
+.btn2.ghost{background:var(--surface);border:1px solid var(--line);color:var(--fg)}
+.foot{font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);text-align:center;padding-top:14px;letter-spacing:.04em}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:95;opacity:0;
+  font-family:var(--font-hud);font-size:14px;background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--ok);
+  color:var(--fg);border-radius:10px;padding:11px 16px;transition:opacity .3s, transform .3s;max-width:92vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (prefers-reduced-motion: reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+</style>
+</head>
+<body>
+
+<canvas id="bgfx" aria-hidden="true"></canvas>
+<div class="wavebanner" id="waveBanner"><div class="inner"><div class="wn" id="wbNum"></div><div class="wt" id="wbTitle"></div></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="stage">
+
+  <!-- ===== ÉTAT TITLE ===== -->
+  <section class="screen active" id="scrTitle">
+    <div class="title-wrap">
+      <div class="eyebrow">Révision interactive · Pilotage de la maintenance du SI</div>
+      <h1 class="bigtitle">CYBER<b>CRISE</b></h1>
+      <p class="subtitle">Neutralise les menaces en répondant juste. Choisis ton terrain : le quiz arcade pour enchaîner les combos, ou l'aventure 2D pour collecter des cristaux de données à travers le SI de CampusCloud.</p>
+      <div class="themes-row" id="themesRow"></div>
+      <div class="mode-row">
+        <div class="mode-card">
+          <button class="start-btn" id="quizBtn" type="button">▶ Mode Quiz</button>
+          <small>20 questions tirées au hasard · combo · timer</small>
+        </div>
+        <div class="mode-card">
+          <button class="start-btn alt" id="advBtn" type="button">◆ Mode Aventure</button>
+          <small>3 niveaux de plateforme · cristaux = QCM</small>
+        </div>
+      </div>
+      <div class="best-line" id="bestLine"></div>
+      <div class="title-meta">
+        <span class="chip">8 domaines</span>
+        <span class="chip" id="qCountChip">0 questions</span>
+        <span class="chip">Clavier &amp; tactile</span>
+        <span class="chip">GitHub Pages ready</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ÉTAT QUIZ ===== -->
+  <section class="screen" id="scrGame">
+    <div class="hud">
+      <div class="hud-left">
+        <div class="lives" id="lives" aria-label="Vies"></div>
+        <span class="wave-tag" id="waveTag">—</span>
+        <span class="combo" id="combo">x1</span>
+        <span class="hud-stat" id="qProgress"></span>
+      </div>
+      <div class="hud-right">
+        <button class="menu-btn" type="button" data-menu>✕ Menu</button>
+        <div class="scorebox"><div class="s" id="score">0</div><div class="l">Score</div></div>
+      </div>
+    </div>
+    <div class="timerbar" id="timerbar"><i id="timerfill"></i></div>
+
+    <div class="arena">
+      <div class="threat">
+        <canvas id="core" aria-hidden="true"></canvas>
+        <div class="threat-tag" id="threatTag">MENACE DÉTECTÉE</div>
+      </div>
+      <h2 class="question" id="question">…</h2>
+      <div class="answers" id="answers"></div>
+      <div class="explain" id="explain"><span class="vr" id="exVerdict"></span><span class="tx" id="exText"></span></div>
+      <button class="next-btn" id="nextBtn" type="button">Continuer ▶</button>
+    </div>
+  </section>
+
+  <!-- ===== ÉTAT ADVENTURE ===== -->
+  <section class="screen" id="scrAdv">
+    <div class="hud">
+      <div class="hud-left">
+        <div class="lives" id="advLives" aria-label="Vies"></div>
+        <span class="wave-tag" id="advTag">—</span>
+        <span class="crystal-count" id="advCrystals">◆ 0/0</span>
+        <span class="combo" id="advCombo">x1</span>
+      </div>
+      <div class="hud-right">
+        <button class="menu-btn" type="button" id="advPauseBtn">❚❚ Pause</button>
+        <button class="menu-btn" type="button" data-menu>✕ Menu</button>
+        <div class="scorebox"><div class="s" id="advScore">0</div><div class="l">Score</div></div>
+      </div>
+    </div>
+    <div class="adv-wrap" id="advWrap">
+      <canvas id="adv" width="384" height="216" aria-label="Zone de jeu : plateformes, cristaux de données et ennemis"></canvas>
+      <div class="advmsg" id="advMsg"></div>
+      <div class="ov" id="ov" role="dialog" aria-live="polite">
+        <div class="k" id="ovK"></div>
+        <div class="t" id="ovT"></div>
+        <div class="d" id="ovD"></div>
+        <div class="hint" id="ovH"></div>
+        <div class="row">
+          <button class="btn2 primary" id="ovB1" type="button"></button>
+          <button class="btn2 ghost" id="ovB2" type="button" style="display:none"></button>
+        </div>
+      </div>
+    </div>
+    <div class="adv-help">← → / Q D / A D : bouger · ↑ Z W Espace : sauter (appui long = saut haut) · Échap : pause · saute sur les ennemis bleus</div>
+    <div class="touch" aria-label="Contrôles tactiles">
+      <div class="grp"><button class="tbtn" id="tcLeft" type="button" aria-label="Gauche">◀</button><button class="tbtn" id="tcRight" type="button" aria-label="Droite">▶</button></div>
+      <div class="grp"><button class="tbtn" id="tcJump" type="button" aria-label="Sauter">▲</button></div>
+    </div>
+  </section>
+
+  <!-- ===== ÉTAT RESULT ===== -->
+  <section class="screen" id="scrResults">
+    <div class="results">
+      <div class="eyebrow" id="resEyebrow">Mission terminée</div>
+      <div class="rank-badge" id="rankBadge">—</div>
+      <div class="res-score"><span id="finalScore">0</span><small> PTS</small></div>
+      <div class="res-stats">
+        <div class="rstat"><div class="v" id="rAcc">0%</div><div class="l">Précision</div></div>
+        <div class="rstat"><div class="v" id="rCombo">x0</div><div class="l">Meilleur combo</div></div>
+        <div class="rstat" id="rLevelsBox"><div class="v" id="rLevels">0/3</div><div class="l">Niveaux</div></div>
+        <div class="rstat best"><div class="v" id="rBest">0</div><div class="l">Record</div></div>
+      </div>
+      <div class="res-actions">
+        <button class="btn2 primary" id="replayBtn" type="button">↻ Rejouer</button>
+        <button class="btn2 ghost" id="shareBtn" type="button">⤴ Partager mon score</button>
+        <button class="btn2 ghost" type="button" data-menu>⌂ Menu</button>
+      </div>
+      <div class="foot">CampusCloud · Pilotage de la maintenance du SI — révise, partage, bats ton record.</div>
+    </div>
+  </section>
+
+  <!-- Modale QCM de l'aventure (plein écran, lisible sur mobile) -->
+  <div class="qmodal" id="qModal" role="dialog" aria-modal="true" aria-labelledby="qQuestion">
+    <div class="qinner">
+      <div class="crystal-ico" aria-hidden="true"></div>
+      <span class="wave-tag" id="qTag">Cristal de données</span>
+      <h2 class="question" id="qQuestion">…</h2>
+      <div class="answers" id="qAnswers"></div>
+      <div class="explain" id="qExplain"><span class="vr" id="qVerdict"></span><span class="tx" id="qText"></span></div>
+      <button class="next-btn" id="qNext" type="button">Continuer ▶</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+var prefersReduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+var DEBUG = /[?&]debug\b/.test(location.search);
+
+// ======================================================================
+// 1. DONNÉES — THÈMES + BANQUE DE QUESTIONS (100 QCM)
+//    Format : {q: question, a: [4 réponses], c: index de la bonne, e: explication}
+//    Ajouter une question = ajouter un objet dans le thème voulu.
+// ======================================================================
+var THEMES = [
+  {id:"maint",  name:"Maintenance du SI",      color:"#b06bff"},
+  {id:"dispo",  name:"Disponibilité & SLA",    color:"#36c7d6"},
+  {id:"bia",    name:"BIA · RTO / RPO",        color:"#ffab2e"},
+  {id:"pcapra", name:"PCA vs PRA",             color:"#2ef0a6"},
+  {id:"incident",name:"Gestion d'incident",    color:"#ff2e6a"},
+  {id:"cab",    name:"Changement & CAB",       color:"#7a8cff"},
+  {id:"backup", name:"Sauvegardes",            color:"#ff7edb"},
+  {id:"supervision",name:"Supervision & dépendances", color:"#9be03a"}
+];
+function themeById(id){ for(var i=0;i<THEMES.length;i++) if(THEMES[i].id===id) return THEMES[i]; return THEMES[0]; }
+
+var BANK = {
+maint:[
+  {q:"Une anomalie vient d'être détectée sur Moodle et on intervient pour la traiter. Quel type de maintenance ?", a:["Préventive","Évolutive","Archivage","Corrective"], c:3, e:"Corrective = on traite une anomalie détectée (incident ou défaut confirmé) : diagnostic, contournement ou correction."},
+  {q:"Renouveler un certificat avant son expiration relève de la maintenance…", a:["corrective","évolutive","préventive (déclenchée par le temps)","curative"], c:2, e:"Préventive = on agit avant la panne, ici sur un déclencheur calendaire : échéance de certificat, fin de support, revue périodique."},
+  {q:"Adapter le SI à une nouvelle réglementation ou à de nouveaux usages relève de la maintenance…", a:["préventive","corrective","évolutive","d'urgence"], c:2, e:"Évolutive = on adapte le service (capacité, sécurité, réglementation, nouveaux usages). Le signal est un besoin ou une opportunité."},
+  {q:"Quelle différence entre maintenance corrective et curative ?", a:["Le correctif traite l'anomalie ; le curatif supprime durablement sa cause","Aucune, ce sont des synonymes","Le curatif intervient avant la panne","Le correctif est réservé aux évolutions"], c:0, e:"Un contournement rétablit vite (correctif), mais seul le curatif supprime la cause : réparer ou remplacer pour de bon."},
+  {q:"Selon le cours, quelle est la bonne unité de pilotage de la maintenance ?", a:["L'actif technique","Le serveur","Le ticket","Le service rendu"], c:3, e:"L'actif technique n'est qu'un moyen : on pilote la valeur du service pour le métier."},
+  {q:"Quels sont les trois déclencheurs classiques de la maintenance préventive ?", a:["Le budget, le délai et le fournisseur","Le bruit, la chaleur et le volume","Le temps, l'usage et le signal","La panne, l'incident et la crise"], c:2, e:"Calendrier (certificat, sauvegarde), seuil d'usage (capacité, cycles) ou signal (erreurs, dérive, vulnérabilité)."},
+  {q:"ITIL 4 est avant tout…", a:["un langage de programmation","un hyperviseur","une suite antivirus","un cadre de bonnes pratiques de gestion des services, organisé en système de valeur"], c:3, e:"ITIL 4 relie gouvernance, chaîne de valeur et pratiques (incident, changement, niveaux de service…). Ce n'est pas qu'une suite de tickets."},
+  {q:"Dans le cycle de vie d'un service, la phase « Transitionner » consiste à…", a:["archiver et révoquer les accès","superviser et assurer l'astreinte","tester, documenter et définir les critères de retour arrière","définir les exigences de disponibilité"], c:2, e:"Concevoir = exigences ; Transitionner = tests, doc, rollback ; Exploiter = supervision ; Maintenir = prévenir, corriger, faire évoluer ; Retirer = archiver."},
+  {q:"Un service passe en production sans documentation ni supervision, car « le livrable fonctionne ». Quel principe est violé ?", a:["La règle 3-2-1","Le calcul du RPO","L'escalade hiérarchique","La maintenabilité se construit avant la mise en production"], c:3, e:"Le passage en production doit transférer un service maintenable, pas seulement un livrable fonctionnel."},
+  {q:"Une documentation opérationnelle utile est…", a:["exhaustive et la plus longue possible","stockée sur le poste de son auteur","trouvable, exécutable et maintenue","rédigée une fois pour toutes"], c:2, e:"Mieux vaut mesurer l'usage et la réussite d'une procédure que compter les pages produites."},
+  {q:"Un inventaire exploitable doit permettre de répondre à quelles questions ?", a:["Quand, combien, pourquoi, comment ?","Qui achète, qui vend, qui paie, qui audite ?","Quel OS, quel CPU, quelle RAM, quel disque ?","Quoi, où, qui, et de quoi cela dépend ?"], c:3, e:"Actifs, localisation, propriétaires et dépendances. Un inventaire non maintenu devient une source de risque : sa fraîcheur est un KPI."},
+  {q:"Dans la matrice de criticité du cours, quel actif faut-il « traiter en priorité » ?", a:["Impact métier élevé et reprise difficile","Impact faible et reprise maîtrisée","Impact faible et reprise coûteuse","Impact élevé mais reprise maîtrisée"], c:0, e:"Impact élevé + reprise difficile : réduire l'exposition, renforcer la redondance, tester le PRA. Impact élevé mais reprise maîtrisée = surveiller."},
+  {q:"Que doit enchaîner chaque ligne d'un plan de maintenance robuste ?", a:["Budget → achat → livraison → facture","Risque → action → fenêtre → ressources → preuve","Alerte → ticket → clôture","Test → production → archivage"], c:1, e:"Le plan traduit le risque en calendrier, ressources et preuve ; il précise aussi responsable, statut, risque résiduel et prochaine revue."}
+],
+dispo:[
+  {q:"Qu'est-ce qu'un SLA ?", a:["Une mesure en temps réel de la disponibilité","Un accord avec le client : niveaux, plage, exclusions, responsabilités","Un outil de supervision","Un type de sauvegarde"], c:1, e:"SLA = Service Level Agreement : l'engagement contractuel sur le niveau de service."},
+  {q:"Quel énoncé distingue correctement SLI, SLO et SLA ?", a:["Le SLI fixe la cible, le SLO mesure","Le SLI mesure, le SLO fixe la cible, le SLA encadre l'engagement","Le SLA mesure, le SLI est contractuel","Les trois sont synonymes"], c:1, e:"SLI = indicateur observé ; SLO = objectif mesurable ; SLA = accord avec conséquences."},
+  {q:"Une disponibilité annuelle de 99,9 % autorise environ…", a:["52 minutes d'indisponibilité","3 jours d'indisponibilité","aucune indisponibilité","8 h 46 d'indisponibilité"], c:3, e:"8 760 h × 0,1 % ≈ 8,76 h. Chaque « 9 » supplémentaire divise la tolérance par environ 10."},
+  {q:"Cible ≥ 99,5 % sur une fenêtre de 30 jours (720 h). Indisponibilité maximale tolérée ?", a:["36 minutes","7 h 12","3 h 36","21 h 36"], c:2, e:"720 h × 0,5 % = 3,6 h, soit 3 h 36. À 99 % on tolérerait 7 h 12."},
+  {q:"La disponibilité se calcule comme…", a:["temps de service effectif ÷ temps de service prévu","nombre de pannes ÷ temps de fonctionnement","MTTR ÷ MTBF","coût annuel ÷ nombre d'utilisateurs"], c:0, e:"C'est la part de la fenêtre de service pendant laquelle le service est réellement utilisable."},
+  {q:"Le MTTR mesure…", a:["l'intervalle moyen entre deux pannes","la perte de données maximale","la latence réseau","le temps moyen de réparation ou de rétablissement"], c:3, e:"MTTR = Mean Time To Repair/Restore. Plus il est bas, plus on rétablit vite."},
+  {q:"Le MTBF mesure…", a:["le délai de rétablissement","la durée d'une sauvegarde","le taux d'erreur applicatif","le temps moyen de fonctionnement entre deux pannes"], c:3, e:"MTBF = Mean Time Between Failures : indicateur de fiabilité. Plus il est élevé, mieux c'est."},
+  {q:"Sur 30 jours, un service subit 3 pannes pour 6 h d'indisponibilité cumulée. Son MTTR est de…", a:["6 h","18 minutes","10 jours","2 h"], c:3, e:"MTTR = durée totale de résolution ÷ nombre d'incidents = 6 h ÷ 3 = 2 h (cible du cas : ≤ 2 h)."},
+  {q:"Période de 720 h, 4 pannes, 8 h d'indisponibilité cumulée. MTBF (temps de fonctionnement ÷ nombre de pannes) ?", a:["178 h","180 h","712 h","2 h"], c:0, e:"Temps de fonctionnement = 720 − 8 = 712 h ; 712 ÷ 4 = 178 h. Piège : 720 ÷ 4 = 180 h oublie de retirer les pannes."},
+  {q:"Deux services ont la même disponibilité. Que peut-on conclure ?", a:["Ils ont forcément le même MTTR","Ils ont forcément le même MTBF","Leurs profils de pannes peuvent être opposés (rares et longues, ou fréquentes et brèves)","Ils sont aussi fiables l'un que l'autre"], c:2, e:"À disponibilité égale, MTBF et MTTR peuvent différer fortement : d'où l'intérêt de lire les trois indicateurs."},
+  {q:"Dans le cas CampusCloud, la cible du KPI de disponibilité est…", a:["≥ 99,5 % sur une fenêtre de 7 jours","≥ 90 % sur un an","≥ 99,999 % sur un an","≥ 50 % sur un mois"], c:0, e:"Cible ≥ 99,5 %, fenêtre 7 j. Les autres KPI : MTTR ≤ 2 h (4 sem.), MTBF ≥ 14 j, SLA ≥ 95 %."},
+  {q:"Selon le cours, un KPI utile, c'est…", a:["un graphique de plus sur le tableau de bord","un SLA signé par le client","un SLI + une cible + une fenêtre + une décision associée","une métrique brute collectée automatiquement"], c:2, e:"Un indicateur utile répond à une décision. Un SLI seul n'est qu'une mesure observée."},
+  {q:"Pour interpréter un KPI de disponibilité, il faut toujours préciser…", a:["le nom de l'outil de supervision uniquement","la couleur du dashboard","la période, le périmètre et ce qui compte comme panne ou temps de réparation","le nom du développeur"], c:2, e:"Sans définition précise, deux chiffres identiques peuvent désigner deux réalités différentes."}
+],
+bia:[
+  {q:"Le BIA (Business Impact Analysis) sert à…", a:["identifier les activités vitales et mesurer les impacts d'une interruption","coder l'application","dimensionner le CPU des serveurs","faire les sauvegardes"], c:0, e:"Le BIA est le point de départ : il fixe les priorités avant de chiffrer RTO et RPO."},
+  {q:"Le RTO est…", a:["le délai maximal acceptable pour rétablir le service","la quantité maximale de données qu'on accepte de perdre","le coût de la restauration","le nombre de serveurs de secours"], c:0, e:"RTO = Recovery Time Objective : combien de temps le métier peut attendre avant la reprise."},
+  {q:"Le RPO est…", a:["le délai de reprise du service","la durée d'une sauvegarde","le nombre de copies","la perte de données maximale acceptable, exprimée dans le temps"], c:3, e:"RPO = Recovery Point Objective : jusqu'où on accepte de remonter dans le passé. Il pilote fréquence et architecture de sauvegarde/réplication."},
+  {q:"Un RPO de 1 heure impose au minimum…", a:["une reprise en moins d'une heure","une sauvegarde quotidienne","une seule copie hors site","une sauvegarde ou réplication au moins toutes les heures"], c:3, e:"RPO 1 h = on tolère 1 h de données perdues au maximum : le point de sauvegarde doit être au plus à 1 h."},
+  {q:"Un RTO de 15 minutes pour un service critique implique plutôt…", a:["une restauration manuelle depuis bande","aucune supervision","une sauvegarde mensuelle","de la redondance ou une bascule automatique, donc un coût plus élevé"], c:3, e:"Plus la reprise doit être rapide, plus il faut investir (haute disponibilité, réplication, automatisation)."},
+  {q:"Quelle relation doit exister entre RTO et MTD (durée maximale d'interruption tolérable) ?", a:["Le RTO peut dépasser la MTD","Le RTO est toujours égal au RPO","Aucune relation","Le RTO doit rester inférieur ou égal à la MTD"], c:3, e:"La MTD est la limite absolue du métier ; le RTO est l'objectif de reprise qu'on se fixe pour rester en dessous."},
+  {q:"Quel est l'ordre logique du raisonnement PRA/PCA ?", a:["BIA → impacts → RTO/RPO → stratégie → preuves","Stratégie → BIA → RTO/RPO → impacts","RTO/RPO → preuves → BIA","Preuves → stratégie → BIA"], c:0, e:"On part des activités vitales, on mesure l'impact, on fixe les objectifs chiffrés, on choisit la stratégie, puis on prouve par des tests."},
+  {q:"Les sauvegardes ont lieu une fois par nuit. Quel RPO réel peut-on promettre ?", a:["0, aucune perte","1 heure","Environ 24 heures dans le pire cas","1 minute"], c:2, e:"Si l'incident survient juste avant la sauvegarde suivante, on perd presque 24 h de données."},
+  {q:"Avec la formule du cas (score = 2×I + P + C − E), quel est le score de Moodle (I/P/C/E = 5/4/5/3) ?", a:["16","19","22","24"], c:0, e:"2×5 + 4 + 5 − 3 = 16. Piège : oublier de soustraire l'effort donne 19."},
+  {q:"Quel actif a le score le plus élevé (2×I + P + C − E) ? Moodle 5/4/5/3 · ERP 5/3/5/4 · CRM 3/3/3/2 · Teams 3/2/3/2", a:["Moodle (16)","ERP (14)","CRM (10)","Teams (9)"], c:0, e:"Moodle 16 ; ERP 10+3+5−4 = 14 ; CRM 6+3+3−2 = 10 ; Teams 6+2+3−2 = 9. Le score oriente la discussion sans remplacer le jugement."},
+  {q:"Dans cette formule, pourquoi l'effort (E) est-il soustrait ?", a:["À score égal, un effort élevé diminue la priorité immédiate (gains rapides d'abord)","Parce que E mesure une erreur","Parce que E mesure l'exposition au risque","Ce n'est pas soustrait dans la formule"], c:0, e:"Un traitement coûteux est moins prioritaire qu'un traitement facile à impact comparable. Tester d'autres pondérations fait partie de l'exercice."},
+  {q:"Quels impacts le BIA examine-t-il ?", a:["Uniquement financier","Uniquement techniques (CPU, RAM, disque)","Financier, humain, légal, réputation et opérationnel","Uniquement les impacts sur la DSI"], c:2, e:"Le BIA regarde l'impact métier sous plusieurs angles avant de fixer tolérances (MTD) et exigences (RTO/RPO)."}
+],
+pcapra:[
+  {q:"Le PCA (Plan de Continuité d'Activité) répond à la question…", a:["comment restaurer les serveurs après un sinistre ?","comment poursuivre les activités essentielles, même en mode dégradé ?","comment chiffrer les sauvegardes ?","comment réduire le coût du cloud ?"], c:1, e:"Le PCA couvre processus, personnes, locaux, fournisseurs et procédures manuelles."},
+  {q:"Le PRA (Plan de Reprise d'Activité) répond à la question…", a:["comment restaurer les services, données et infrastructures numériques ?","comment poursuivre l'activité sans informatique ?","comment former les étudiants ?","comment négocier un SLA ?"], c:0, e:"Le PRA s'appuie sur sauvegardes, réplication, site de secours ou reconstruction."},
+  {q:"Le « mode dégradé » signifie…", a:["un arrêt complet en attendant le PRA","un service nominal sans restriction","un service réduit, mais l'activité essentielle est maintenue","la fin de la restauration"], c:2, e:"On continue avec des moyens réduits plutôt que de tout arrêter."},
+  {q:"PCA et PRA sont…", a:["complémentaires : l'un maintient l'activité, l'autre rétablit les moyens numériques","identiques","opposés : on choisit l'un ou l'autre","réservés aux grandes entreprises"], c:0, e:"Ils ne répondent pas à la même question mais se complètent dans une crise."},
+  {q:"Un PRA techniquement réussi peut malgré tout échouer si…", a:["le RPO est de 1 heure","le métier ne sait pas fonctionner pendant la reprise","les sauvegardes sont chiffrées","les serveurs sont récents"], c:1, e:"Sans PCA, l'activité s'arrête pendant la restauration, même si la technique est parfaite."},
+  {q:"Moodle est indisponible un jour d'examen. Quelle mesure relève du PCA ?", a:["Restaurer la VM depuis la sauvegarde","Une procédure manuelle de secours pour poursuivre l'examen","Remplacer l'hyperviseur","Purger les journaux"], c:1, e:"Le PCA maintient l'activité essentielle ; la restauration technique de la VM relève du PRA."},
+  {q:"Restaurer une VM depuis une sauvegarde saine relève…", a:["du PRA","du PCA","du BIA","du CAB"], c:0, e:"Le PRA rétablit les moyens numériques (données, services, infrastructure)."},
+  {q:"Un PRA jamais testé est…", a:["une hypothèse non démontrée","fiable car documenté","conforme à ISO 22301 d'office","inutile mais sans risque"], c:0, e:"Tester, mesurer, corriger : seule la preuve rend le plan crédible."},
+  {q:"Qui fixe l'ordre de reprise des services ?", a:["L'ordre alphabétique","Les priorités métier, vérifiées par la capacité technique réelle","La taille des VM","Le coût des licences"], c:1, e:"Les priorités métier fixent l'ordre ; la capacité technique vérifie ce qui est réaliste."},
+  {q:"Pourquoi restaurer très tôt l'identité (Active Directory / Azure AD) dans un PRA ?", a:["De nombreux services en dépendent (SSO, accès) : sans elle, rien ne repart","Parce qu'elle est la plus petite à restaurer","Parce qu'elle coûte moins cher","Parce qu'elle n'a pas besoin de sauvegarde"], c:0, e:"Les dépendances bloquantes dictent l'ordre : AD et Azure AD sont notés 5 en impact et en continuité dans le cas."},
+  {q:"ISO 22301 est…", a:["la norme de maintenance logicielle","la norme de management de la continuité d'activité","un guide de gestion des correctifs","un outil de supervision"], c:1, e:"ISO/IEC/IEEE 14764 concerne la maintenance logicielle ; NIST SP 800-40 les correctifs."},
+  {q:"Dans un exercice de crise (cadrer, animer, évaluer), les « stimuli datés » relèvent de…", a:["le cadrage","l'évaluation","l'animation","la clôture"], c:2, e:"Cadrer : objectifs, participants, règles de sécurité. Animer : stimuli datés, observateurs. Évaluer : critères, RETEX à chaud/à froid, plan d'action."}
+],
+incident:[
+  {q:"La priorité d'un incident découle…", a:["du nombre d'appels reçus","de l'impact et de l'urgence","de l'ancienneté du ticket","du grade de l'appelant"], c:1, e:"La priorité vient de l'impact et de l'urgence, pas du « volume sonore »."},
+  {q:"Un incident P1 est…", a:["mineur : traitement planifié","modéré : résolution rapide avec contrôle du risque","faible : à regrouper et automatiser","critique : impact élevé et délai très court, escalade immédiate"], c:3, e:"P1 critique, P2 majeur (impact élevé, délai disponible), P3 modéré, P4 faible."},
+  {q:"Quel est l'ordre du flux incident ?", a:["Diagnostiquer → détecter → clore → qualifier","Qualifier → clore → détecter → rétablir","Rétablir → détecter → qualifier → clore","Détecter → qualifier → diagnostiquer → rétablir → clore"], c:3, e:"À chaque étape : horodatage, décision, responsable et prochain point de contrôle."},
+  {q:"Le premier objectif du flux incident est…", a:["un rétablissement contrôlé du service ; la cause profonde peut être analysée ensuite","trouver le coupable","identifier la cause racine avant toute action","fermer le ticket au plus vite"], c:0, e:"L'analyse de cause profonde peut se poursuivre après le retour du service."},
+  {q:"Un contournement (workaround) est…", a:["la suppression définitive de la cause","une sauvegarde","une solution temporaire qui restaure le service sans supprimer la cause","un changement standard"], c:2, e:"Le contournement rétablit vite ; le curatif traitera la cause ensuite."},
+  {q:"Appeler un expert réseau ou base de données relève de l'escalade…", a:["fonctionnelle","hiérarchique","de communication","budgétaire"], c:0, e:"Fonctionnelle = chercher l'expertise ; hiérarchique = obtenir priorité, ressources ou arbitrage de risque."},
+  {q:"Obtenir un arbitrage de risque ou activer une cellule de crise relève de l'escalade…", a:["hiérarchique","fonctionnelle","technique","documentaire"], c:0, e:"Escalade hiérarchique : mobiliser une autorité pour arbitrer priorité, ressources ou risque."},
+  {q:"Quel est le rôle de l'Incident Manager ?", a:["Diagnostiquer et restaurer techniquement à la place des équipes","Prioriser et coordonner la résolution","Qualifier et tracer les tickets au guichet","Décider du budget annuel"], c:1, e:"Service Desk : qualifier, tracer, informer. N2/N3 : diagnostiquer, restaurer. Incident Manager : prioriser, coordonner."},
+  {q:"Que doit conserver une main courante de crise ?", a:["L'heure, l'auteur, la décision, la preuve et la prochaine action","Uniquement les noms des participants","Les mots de passe des administrateurs","Une copie de chaque sauvegarde"], c:0, e:"Un seul fil rouge horodaté évite le bruit et permet le RETEX."},
+  {q:"Une action de RETEX est considérée comme close quand…", a:["elle a été décidée en réunion","elle a été assignée à un responsable","le compte rendu est envoyé","son efficacité est démontrée"], c:3, e:"Le RETEX produit des changements observables : faits, causes, barrières, actions, vérification."},
+  {q:"À 08:20 le SSO devient instable, à 08:35 les inscriptions échouent, et un changement réseau a eu lieu la veille. Bonne posture ?", a:["Accuser aussitôt le prestataire réseau","Qualifier périmètre et impact, et examiner le changement de la veille sans surinterpréter","Redémarrer tous les serveurs","Attendre pour voir si cela passe"], c:1, e:"Un changement récent est une hypothèse à vérifier, pas une certitude. On trace les décisions sur la main courante."},
+  {q:"Dans la chronologie ransomware du cas, quel jalon suit la détection (T+0) ?", a:["T+30 : restauration priorisée","T+60 : détection","T+15 : confinement","T+120 : cellule de crise"], c:2, e:"T+0 détection · T+15 confinement · T+30 cellule de crise · T+60 communication · T+120 restauration priorisée."},
+  {q:"Face à un ransomware, on isole les systèmes touchés…", a:["en éteignant et réinitialisant tout immédiatement","sans détruire les preuves","après avoir payé la rançon","uniquement après la restauration"], c:1, e:"Isoler sans détruire les preuves : l'investigation et la traçabilité en dépendent."}
+],
+cab:[
+  {q:"Une RFC est…", a:["une demande formalisée de changement permettant de l'évaluer et de l'autoriser","un incident de priorité 1","un rapport de sauvegarde","un accord de niveau de service"], c:0, e:"RFC = Request for Change."},
+  {q:"Lequel de ces éléments n'est PAS attendu dans un dossier RFC ?", a:["La liste des invités du pot de fin d'année","L'objectif et le périmètre","Le plan de test et l'observabilité","Le plan de rollback et son seuil de déclenchement"], c:0, e:"Dossier RFC : objectif, bénéfice, risques et dépendances, tests, pilote/vagues/communication, rollback + seuil."},
+  {q:"Quel est le bon rôle du CAB ?", a:["Approuver tous les changements","Exécuter les changements","Remplacer l'Incident Manager","Conseiller et synchroniser les changements à fort enjeu, sans approuver chaque changement"], c:3, e:"Le CAB n'est pas un guichet : il intervient là où la pluralité des points de vue crée de la valeur."},
+  {q:"Un changement standard est…", a:["toujours soumis au CAB","réservé aux urgences","interdit en production","préautorisé, répétable, à faible risque"], c:3, e:"Un changement fréquent ne devient standard qu'après preuve de répétabilité et de maîtrise."},
+  {q:"Un changement urgent…", a:["est dispensé de toute trace","suit une voie accélérée pour protéger ou rétablir, avec décision tracée et revue a posteriori","attend la prochaine réunion du CAB","n'a jamais de rollback"], c:1, e:"L'urgence accélère la décision, pas l'absence de traçabilité."},
+  {q:"Quelle est l'une des quatre questions posées au CAB pour une RFC critique ?", a:["Le prestataire est-il le moins cher ?","Le rollback est-il réaliste et chronométré ?","Quelle couleur pour la maquette ?","Combien de tickets ont été fermés cette semaine ?"], c:1, e:"Les 4 questions : risque compris ? preuve de test suffisante ? rollback réaliste et chronométré ? parties prenantes prêtes ?"},
+  {q:"Déployer par pilote puis par vagues sert à…", a:["aller plus vite en une seule fois","éviter d'écrire un rollback","remplacer le CAB","limiter le risque en validant sur un petit périmètre avant de généraliser"], c:3, e:"Le risque reste maîtrisé : on observe, puis on étend."},
+  {q:"Un seuil de déclenchement du rollback est…", a:["une heure de fin de projet","une condition objective (erreurs, latence…) qui décide du retour arrière","un nombre de serveurs","un budget maximum"], c:1, e:"C'est le signal mesurable qui dit « on annule » sans débat dans l'urgence."},
+  {q:"Quelle décision peut prendre le CAB ?", a:["Seulement approuver","Seulement refuser","Approuver ou reporter, avec conditions, pilote, seuil et prochain point de contrôle","Exécuter le changement lui-même"], c:2, e:"La décision est assortie de conditions explicites et d'un prochain point de contrôle."},
+  {q:"Un correctif critique exige 20 minutes de redémarrage pendant les inscriptions. Meilleure posture ?", a:["Le déployer sans prévenir","Le refuser définitivement","Attendre la prochaine année universitaire","Proposer pilote, fenêtre adaptée, observabilité et seuil de rollback, en répondant aux objections"], c:3, e:"On défend valeur, risque, dépendances et options, puis on formule une décision assortie de conditions."},
+  {q:"Une fenêtre de maintenance est…", a:["une fenêtre de l'interface Windows","un tableau de bord de supervision","la période autorisée pour intervenir avec un impact convenu","un type de sauvegarde"], c:2, e:"Elle limite l'impact en choisissant un créneau (souvent hors des périodes critiques) validé avec le métier."},
+  {q:"La finalité de la gestion du changement est…", a:["de réduire le nombre de changements","d'augmenter le nombre de changements réussis","de bloquer toute nouveauté","de remplacer la CMDB"], c:1, e:"Le contrôle est proportionné à l'incertitude et à l'impact, sans immobiliser l'innovation."}
+],
+backup:[
+  {q:"La règle 3-2-1 de sauvegarde, c'est…", a:["3 serveurs, 2 sauvegardes, 1 restauration","3 copies, sur 2 supports différents, dont 1 hors site","3 sauvegardes par jour pendant 2 jours","1 seule copie bien protégée"], c:1, e:"La règle 3-2-1 résiste à la plupart des sinistres (panne, erreur, vol, incendie, ransomware)."},
+  {q:"Quelle phrase est vraie ?", a:["Une sauvegarde présente n'est pas forcément restaurable","Une sauvegarde « OK » dans le log est forcément exploitable","Une sauvegarde chiffrée est forcément saine","Plus il y a de copies, moins il faut tester"], c:0, e:"Seul un test de restauration prouve qu'une sauvegarde est exploitable."},
+  {q:"Pourquoi tester une restauration dans une zone isolée ?", a:["Gagner de la place disque","Éviter d'avoir à documenter","Vérifier l'intégrité sans réinjecter un éventuel compromis en production","C'est une obligation d'ITIL pour tous les actifs"], c:2, e:"On contrôle que la copie est saine avant de la reconnecter au reste du SI."},
+  {q:"Après une attaque, les sauvegardes récentes sont suspectes. Que faire ?", a:["Restaurer immédiatement la plus récente","Vérifier l'intégrité en zone isolée et remonter vers une sauvegarde saine antérieure","Supprimer toutes les sauvegardes","Payer la rançon"], c:1, e:"Restaurer à l'aveugle peut réinjecter l'attaque : NO-GO tant que l'intégrité n'est pas prouvée."},
+  {q:"Un snapshot est…", a:["un pare-feu applicatif","un contrat de service","un journal d'audit","une capture de l'état d'un système à un instant donné"], c:3, e:"Utile pour revenir vite en arrière, mais il ne remplace pas une sauvegarde indépendante."},
+  {q:"Pour tenir un RPO de 4 heures, la sauvegarde doit avoir lieu…", a:["une fois par jour","au moins toutes les 4 heures","une fois par semaine","une fois par mois"], c:1, e:"Le RPO donne l'écart maximal entre deux points de restauration."},
+  {q:"Pourquoi une copie hors ligne ou immuable protège-t-elle d'un ransomware ?", a:["Elle est plus rapide à restaurer","Elle ne peut être ni chiffrée ni effacée par l'attaquant","Elle coûte moins cher","Elle remplace le PRA"], c:1, e:"Une copie accessible depuis le SI compromis peut être chiffrée avec le reste."},
+  {q:"Pourquoi la réplication ne remplace-t-elle pas la sauvegarde ?", a:["Elle est interdite par ITIL","Elle ne copie aucune donnée","Elle propage aussi les suppressions, corruptions et chiffrements","Elle est toujours plus lente"], c:2, e:"Une donnée chiffrée est répliquée telle quelle : seul un point de restauration antérieur permet de revenir."},
+  {q:"Quelle preuve démontre qu'une sauvegarde est restaurable ?", a:["Le message « backup OK »","Le volume de données copié","La date de dernière exécution","Un test de restauration réussi, chronométré et documenté"], c:3, e:"On mesure aussi le temps réel de restauration pour le comparer au RTO."},
+  {q:"La restauration d'un service dure 10 h pour un RTO de 4 h. Conclusion ?", a:["Tout va bien, la donnée est restaurée","Le dispositif ne tient pas l'objectif : revoir la stratégie ou le RTO","Il suffit d'attendre","Le RPO est forcément respecté"], c:1, e:"Un test chronométré qui dépasse le RTO prouve un écart à traiter."},
+  {q:"Avant de remettre un service en production après un ransomware, il faut…", a:["redémarrer immédiatement pour limiter l'arrêt","supprimer les journaux pour repartir propre","vérifier l'intégrité avant remise en service","désactiver la supervision"], c:2, e:"Décision attendue de la cellule de crise : vérifier l'intégrité avant remise en service."},
+  {q:"Dans le scénario ransomware du cas, la restauration priorisée intervient à…", a:["T+0","T+15","T+120","T+30"], c:2, e:"La restauration vient après détection, confinement, cellule de crise et communication, selon l'ordre de priorité métier."}
+],
+supervision:[
+  {q:"Quels sont les trois niveaux d'une supervision utile ?", a:["Réseau, stockage et calcul","Expérience, service et composants","Hier, aujourd'hui et demain","Métier, juridique et financier"], c:1, e:"On part de ce que l'utilisateur doit réussir, puis on descend vers les composants explicatifs."},
+  {q:"Collecter des métriques, est-ce superviser ?", a:["Non : chaque métrique doit mener à une décision","Oui, dès qu'on collecte","Oui, si on stocke 5 ans","Non, il faut seulement plus d'écrans"], c:0, e:"Une donnée sans propriétaire ni décision associée crée du bruit, pas de la maîtrise."},
+  {q:"Quelle est la chaîne de supervision complète ?", a:["Détecter → mesurer → archiver","Alerter → ignorer → clore","Mesurer → contextualiser → détecter → agir → apprendre","Collecter → stocker → purger"], c:2, e:"La chaîne n'est complète que si réponse et apprentissage (seuils, runbooks, capacité) sont bouclés."},
+  {q:"Qu'est-ce qui rend une alerte « actionnable » ?", a:["Gravité, contexte, propriétaire, délai et action attendue","Un son fort","Un volume élevé de notifications","Un envoi à toute l'entreprise"], c:0, e:"Avant d'ajouter une alerte, vérifier qu'une personne ou une automatisation sait quoi en faire."},
+  {q:"Un trigger (déclencheur) est…", a:["un type de sauvegarde","un rôle de la cellule de crise","une condition logique qui provoque une alerte dans l'outil de supervision","un contrat fournisseur"], c:2, e:"Quand la métrique franchit le seuil défini, la condition est vraie et l'alerte part."},
+  {q:"Quel outil est décrit comme un moteur de checks extensible par plugins ?", a:["Grafana","Microsoft Learn","ServiceNow","Nagios"], c:3, e:"Grafana : visualisation et alerting ; Zabbix : collecte, triggers, SLA ; Centreon : vues métier et rapports. Composer une chaîne cohérente est souvent plus réaliste qu'un outil unique."},
+  {q:"Une « panne en cascade » est…", a:["une panne isolée sans impact","une panne qui en entraîne d'autres par dépendances","une sauvegarde incrémentale","un rollback réussi"], c:1, e:"Un composant tombe et fait tomber ceux qui en dépendent : effet domino."},
+  {q:"Pourquoi cartographier les dépendances ?", a:["Pour décorer la salle serveur","Pour anticiper les impacts en chaîne d'une panne ou d'un changement","Pour réduire le nombre d'utilisateurs","Pour supprimer la supervision"], c:1, e:"Dans le cours : Portail étudiant → IAM/SSO, LMS → paiement. Connaître les liens permet de prévoir ce qui tombera avec quoi."},
+  {q:"À quoi sert la CMDB ?", a:["À stocker les mots de passe","À planifier les congés de l'équipe","À relier les éléments de configuration et leurs dépendances pour analyser l'impact","À remplacer la supervision"], c:2, e:"La qualité des relations est décisive pour l'analyse d'impact des incidents et changements."},
+  {q:"Que faut-il préciser pour chaque KPI ?", a:["Seulement son nom","Source, périmètre et période, formule, cible, fréquence de revue et décision déclenchée","Seulement sa couleur","Seulement son prix"], c:1, e:"Un KPI sans formule exacte ni décision associée est ambigu."},
+  {q:"Par quoi doit commencer un bon tableau de bord ?", a:["Trente graphiques pour tout montrer","La liste de tous les serveurs","Le logo du fournisseur","Un message de synthèse : ce qui change, pourquoi cela compte, quelle décision est attendue"], c:3, e:"Ensuite : tendance, écart à la cible, action et responsable. La visualisation vient après la définition."},
+  {q:"Pour réduire le bruit d'alerting, on commence par…", a:["ajouter des alertes","désactiver la supervision","supprimer les alertes sans action claire","augmenter la rétention des logs"], c:2, e:"Réduire le bruit commence par supprimer les alertes dont personne ne sait quoi faire."},
+  {q:"La panne perçue par l'utilisateur n'est pas toujours visible au niveau de sa cause. On analyse donc…", a:["uniquement le CPU des serveurs","uniquement les journaux d'une VM","uniquement le datacenter","de l'expérience utilisateur vers les composants explicatifs"], c:3, e:"On commence par ce que l'utilisateur doit réussir, puis on descend service par service jusqu'à la cause."}
+]
+};
+
+var TOTAL_Q = 0; THEMES.forEach(function(t){ TOTAL_Q += BANK[t.id].length; });
+var QUIZ_LEN = 20;            // questions tirées au hasard par partie de quiz
+
+// ======================================================================
+// 2. OUTILS
+// ======================================================================
+function $(id){ return document.getElementById(id); }
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function setTheme(c){ document.documentElement.style.setProperty("--theme",c);
+  document.documentElement.style.setProperty("--theme-dim", shade(c,-60)); }
+function shade(hex,amt){ var n=parseInt(hex.slice(1),16),r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
+  r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));
+  return "#"+(1<<24|r<<16|g<<8|b).toString(16).slice(1); }
+function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove("show"); },2400); }
+function shakeBody(){ if(prefersReduced) return; document.body.classList.remove("shake"); void document.body.offsetWidth; document.body.classList.add("shake"); }
+
+// Record global (partagé Quiz + Aventure)
+var BEST_KEY="cybercrise_best_v1";
+function getBest(){ try{ return parseInt(localStorage.getItem(BEST_KEY)||"0",10)||0; }catch(e){ return 0; } }
+function setBest(v){ try{ localStorage.setItem(BEST_KEY, String(v)); }catch(e){} }
+
+// Animation du score (HUD)
+function animScore(elId, to){
+  var el=$(elId), from=parseInt(el.textContent.replace(/\D/g,""),10)||0, t0=null;
+  if(prefersReduced){ el.textContent=to.toLocaleString("fr-FR"); return; }
+  function f(ts){ if(!t0)t0=ts; var p=Math.min(1,(ts-t0)/400); el.textContent=Math.round(from+(to-from)*p).toLocaleString("fr-FR"); if(p<1)requestAnimationFrame(f); }
+  requestAnimationFrame(f);
+}
+function floatPoints(x,y,txt,col){
+  var f=document.createElement("div"); f.className="float"; f.textContent=txt; f.style.color=col||"var(--ok)";
+  f.style.left=x+"px"; f.style.top=y+"px"; document.body.appendChild(f);
+  setTimeout(function(){ f.remove(); },1000);
+}
+function renderLives(boxId, lives, max){
+  var box=$(boxId); box.innerHTML="";
+  for(var i=0;i<max;i++){ var d=document.createElement("div"); d.className="life"+(i>=lives?" lost":""); box.appendChild(d); }
+}
+
+// QCM partagé Quiz / Aventure : dessine 4 boutons mélangés, renvoie l'ordre
+var LETTERS=["A","B","C","D"];
+function paintAnswers(box, q, onPick){
+  box.innerHTML="";
+  var order=shuffle([0,1,2,3]);
+  order.forEach(function(orig,pos){
+    var b=document.createElement("button"); b.className="ans"; b.type="button";
+    var k=document.createElement("span"); k.className="k"; k.textContent=LETTERS[pos];
+    var t=document.createElement("span"); t.textContent=q.a[orig];
+    b.appendChild(k); b.appendChild(t);
+    b.addEventListener("click", function(){ onPick(orig===q.c, b); });
+    box.appendChild(b);
+  });
+  return order;
+}
+function revealAnswers(box, q, order){
+  var btns=box.children;
+  for(var i=0;i<btns.length;i++){ btns[i].disabled=true;
+    if(order[i]===q.c) btns[i].classList.add("correct"); else btns[i].classList.add("dim"); }
+}
+function rankFor(acc){
+  if(acc>=.95) return "RSSI · Directeur de crise";
+  if(acc>=.85) return "Ingénieur résilience";
+  if(acc>=.70) return "Analyste SOC";
+  if(acc>=.50) return "Technicien support";
+  return "Stagiaire — rejoue pour progresser";
+}
+
+// ======================================================================
+// 3. MACHINE À ÉTATS  TITRE → QUIZ | AVENTURE → RÉSULTAT
+// ======================================================================
+var STATE = { TITLE:"TITLE", QUIZ:"QUIZ", ADVENTURE:"ADVENTURE", RESULT:"RESULT" };
+var SCREEN_OF = { TITLE:"scrTitle", QUIZ:"scrGame", ADVENTURE:"scrAdv", RESULT:"scrResults" };
+var state = STATE.TITLE;
+
+// Bilan de la partie en cours (partagé par les deux modes)
+var run = { mode:STATE.QUIZ, score:0, combo:0, bestCombo:0, asked:0, correct:0, lives:3, maxLives:3, levelsDone:0, levelsTotal:0, won:false };
+function newRun(mode){
+  run.mode=mode; run.score=0; run.combo=0; run.bestCombo=0; run.asked=0; run.correct=0;
+  run.maxLives = mode===STATE.ADVENTURE ? 5 : 3; run.lives=run.maxLives; run.levelsDone=0; run.won=false;
+  run.levelsTotal = mode===STATE.ADVENTURE ? LEVELS.length : 0;
+}
+
+function go(next){
+  // --- sortie de l'état courant ---
+  if(state===STATE.QUIZ) clearInterval(quizTimer);
+  if(state===STATE.ADVENTURE && next!==STATE.ADVENTURE) Adv.stop();
+  state=next;
+  // --- entrée dans le nouvel état ---
+  Object.keys(SCREEN_OF).forEach(function(k){ $(SCREEN_OF[k]).classList.toggle("active", k===next); });
+  document.body.setAttribute("data-state", next);
+  window.scrollTo(0,0);
+  if(next===STATE.TITLE){ setTheme("#b06bff"); refreshBestLine(); }
+}
+
+// ---------- écran titre ----------
+var themesRow=$("themesRow");
+THEMES.forEach(function(t){ var el=document.createElement("span"); el.className="trow-item";
+  el.style.borderLeftColor=t.color; el.textContent=t.name; themesRow.appendChild(el); });
+$("qCountChip").textContent = TOTAL_Q+" questions";
+function refreshBestLine(){ var b=getBest(); $("bestLine").innerHTML = b>0 ? "Ton record : <b>"+b.toLocaleString("fr-FR")+" pts</b>" : "Aucun record encore — à toi de jouer."; }
+refreshBestLine();
+
+// ======================================================================
+// 4. MENACE 3D (Three.js, léger) — utilisée par le mode Quiz
+// ======================================================================
+var core = { ok:false };
+(function(){
+  try{
+    if(!window.THREE){ document.querySelector(".threat").insertAdjacentHTML("beforeend",'<div class="core-fallback"></div>'); return; }
+    var cv=$("core");
+    var rnd=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
+    rnd.setPixelRatio(Math.min(2,devicePixelRatio||1));
+    var sc=new THREE.Scene(), cam=new THREE.PerspectiveCamera(50,1,0.1,100); cam.position.z=4.2;
+    var grp=new THREE.Group(); sc.add(grp);
+    var geo=new THREE.IcosahedronGeometry(1.35,1);
+    var mat=new THREE.MeshBasicMaterial({color:0xb06bff,wireframe:true,transparent:true,opacity:.9});
+    var mesh=new THREE.Mesh(geo,mat); grp.add(mesh);
+    var solid=new THREE.Mesh(new THREE.IcosahedronGeometry(1.15,0), new THREE.MeshBasicMaterial({color:0x2a1150,transparent:true,opacity:.55}));
+    grp.add(solid);
+    var pcount=140, ppos=new Float32Array(pcount*3), pvel=[];
+    for(var i=0;i<pcount;i++){ ppos[i*3]=0;ppos[i*3+1]=0;ppos[i*3+2]=0;
+      var th=Math.random()*6.283, ph=Math.acos(2*Math.random()-1), sp=.04+Math.random()*.11;
+      pvel.push([Math.sin(ph)*Math.cos(th)*sp,Math.sin(ph)*Math.sin(th)*sp,Math.cos(ph)*sp]); }
+    var pg=new THREE.BufferGeometry(); pg.setAttribute("position",new THREE.BufferAttribute(ppos,3));
+    var pmat=new THREE.PointsMaterial({color:0xffffff,size:.06,transparent:true,opacity:0});
+    var pts=new THREE.Points(pg,pmat); sc.add(pts);
+    var exploding=false, et=0;
+    function size(){ var w=cv.clientWidth||220, h=cv.clientHeight||220; rnd.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }
+    var cur=new THREE.Color(0xb06bff), tgt=new THREE.Color(0xb06bff);
+    core.setColor=function(hex){ tgt.set(hex); };
+    core.explode=function(){ if(prefersReduced) return; exploding=true; et=0;
+      var p=pg.attributes.position.array; for(var i=0;i<pcount*3;i++)p[i]=0; pg.attributes.position.needsUpdate=true;
+      pmat.color.copy(cur); pmat.opacity=1; mesh.scale.set(1,1,1); };
+    function loop(){
+      requestAnimationFrame(loop);
+      if(state!==STATE.QUIZ) return;               // pas de rendu hors du mode Quiz
+      size();
+      cur.lerp(tgt,.08); mat.color.copy(cur);
+      grp.rotation.y+=prefersReduced?0:.006; grp.rotation.x+=prefersReduced?0:.0024;
+      var s=1+Math.sin(Date.now()*.004)*.04; if(!exploding) mesh.scale.set(s,s,s);
+      if(exploding){ et++; var p=pg.attributes.position.array;
+        for(var i=0;i<pcount;i++){ p[i*3]+=pvel[i][0];p[i*3+1]+=pvel[i][1];p[i*3+2]+=pvel[i][2]; }
+        pg.attributes.position.needsUpdate=true; pmat.opacity=Math.max(0,1-et/55);
+        var ms=Math.max(.0001,1-et/18); mesh.scale.set(ms,ms,ms);
+        if(et>58){ exploding=false; mesh.scale.set(1,1,1); } }
+      rnd.render(sc,cam);
+    }
+    core.ok=true; loop();
+  }catch(e){ try{ document.querySelector(".threat").insertAdjacentHTML("beforeend",'<div class="core-fallback"></div>'); }catch(_){} }
+})();
+
+// ---------- particules d'arrière-plan (léger, coupé pendant l'aventure) ----------
+(function(){
+  var cv=$("bgfx"), ctx=cv.getContext("2d"), W,H,DPR,nodes=[];
+  function resize(){ DPR=Math.min(2,devicePixelRatio||1); W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;
+    cv.style.width=innerWidth+"px";cv.style.height=innerHeight+"px"; }
+  resize(); addEventListener("resize",resize);
+  var N=innerWidth<700?22:40;
+  for(var i=0;i<N;i++)nodes.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0003,vy:(Math.random()-.5)*.0003});
+  function draw(){
+    requestAnimationFrame(draw);
+    if(state===STATE.ADVENTURE) return;
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<nodes.length;i++){var n=nodes[i];n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>1)n.vx*=-1;if(n.y<0||n.y>1)n.vy*=-1;}
+    for(var i=0;i<nodes.length;i++)for(var j=i+1;j<nodes.length;j++){var a=nodes[i],b=nodes[j],dx=(a.x-b.x)*W,dy=(a.y-b.y)*H,d=Math.sqrt(dx*dx+dy*dy),lim=130*DPR;
+      if(d<lim){ctx.strokeStyle="rgba(176,107,255,"+(.1*(1-d/lim)).toFixed(3)+")";ctx.lineWidth=DPR*.6;ctx.beginPath();ctx.moveTo(a.x*W,a.y*H);ctx.lineTo(b.x*W,b.y*H);ctx.stroke();}}
+    for(var i=0;i<nodes.length;i++){var n=nodes[i];ctx.fillStyle="rgba(176,107,255,.5)";ctx.beginPath();ctx.arc(n.x*W,n.y*H,DPR*1.3,0,6.283);ctx.fill();}
+  }
+  if(!prefersReduced) draw(); else cv.style.opacity=".25";
+})();
+
+// ======================================================================
+// 5. MODE QUIZ — 20 questions tirées au hasard dans les 100
+// ======================================================================
+var queue=[], qi=0, answered=false, quizTimer=null, timeLeft=0, TQ=16; // TQ = secondes par question
+
+function buildQueue(){
+  // tirage aléatoire de QUIZ_LEN questions, puis regroupées par domaine (vagues)
+  var all=[];
+  THEMES.forEach(function(t,ti){ BANK[t.id].forEach(function(q){ all.push({theme:t, ti:ti, q:q}); }); });
+  var pick=shuffle(all).slice(0, Math.min(QUIZ_LEN, all.length));
+  pick.sort(function(a,b){ return a.ti-b.ti; });
+  var prev=-1; pick.forEach(function(it){ it.first=(it.ti!==prev); prev=it.ti; });
+  queue=pick;
+}
+
+function startQuiz(){
+  newRun(STATE.QUIZ); buildQueue(); qi=0;
+  $("score").textContent="0"; renderLives("lives", run.lives, run.maxLives); updateCombo();
+  go(STATE.QUIZ); loadQuestion();
+}
+
+function waveBanner(theme, cb){
+  var wb=$("waveBanner"); $("wbNum").textContent="DOMAINE";
+  $("wbTitle").textContent=theme.name; $("wbTitle").style.textShadow="0 0 40px "+theme.color;
+  $("wbNum").style.color=theme.color;
+  wb.classList.remove("show"); void wb.offsetWidth; wb.classList.add("show");
+  setTimeout(cb, prefersReduced?50:900);
+}
+
+function loadQuestion(){
+  if(qi>=queue.length || run.lives<=0){ finishRun(); return; }
+  var item=queue[qi];
+  setTheme(item.theme.color); if(core.ok&&core.setColor) core.setColor(item.theme.color);
+  $("waveTag").textContent=item.theme.name;
+  $("qProgress").innerHTML="Q <b>"+(qi+1)+"</b>/"+queue.length;
+  $("threatTag").textContent="MENACE · "+item.theme.name.toUpperCase();
+  function paint(){
+    if(state!==STATE.QUIZ) return;               // l'utilisateur a quitté pendant la bannière
+    answered=false;
+    $("question").textContent=item.q.q;
+    item._order=paintAnswers($("answers"), item.q, function(correct, btn){ answer(correct, btn, item); });
+    $("explain").className="explain"; $("nextBtn").className="next-btn";
+    startTimer();
+  }
+  if(item.first){ waveBanner(item.theme, paint); } else { paint(); }
+}
+
+function startTimer(){
+  clearInterval(quizTimer); timeLeft=TQ*1000; var tb=$("timerbar"), fill=$("timerfill");
+  tb.classList.remove("low"); fill.style.width="100%";
+  var t0=Date.now();
+  quizTimer=setInterval(function(){
+    var el=Date.now()-t0; timeLeft=TQ*1000-el; var pct=Math.max(0,timeLeft/(TQ*1000)*100);
+    fill.style.width=pct+"%"; if(pct<30) tb.classList.add("low");
+    if(timeLeft<=0){ clearInterval(quizTimer); quizTimeout(); }
+  },80);
+}
+
+function answer(correct, btn, item){
+  if(answered) return; answered=true; clearInterval(quizTimer); run.asked++;
+  revealAnswers($("answers"), item.q, item._order);
+  var ex=$("explain"), v=$("exVerdict"), tx=$("exText");
+  if(correct){
+    btn.classList.remove("dim"); btn.classList.add("correct");
+    run.combo++; if(run.combo>run.bestCombo)run.bestCombo=run.combo; run.correct++;
+    var mult=Math.min(5,run.combo); var speedBonus=Math.round(timeLeft/(TQ*1000)*50);
+    var pts=(100+speedBonus)*mult;
+    run.score+=pts; animScore("score", run.score);
+    if(core.ok&&core.explode) core.explode();
+    var r=btn.getBoundingClientRect(); floatPoints(r.left+r.width/2, r.top, "+"+pts, "var(--ok)");
+    ex.className="explain good show"; v.textContent=run.combo>=2?("Juste ! x"+mult+" combo"):"Juste !";
+    tx.textContent=item.q.e;
+  } else {
+    btn.classList.remove("dim"); btn.classList.add("wrong");
+    run.combo=0; run.lives--; renderLives("lives", run.lives, run.maxLives); shakeBody();
+    ex.className="explain bad show"; v.textContent="Raté —"; tx.textContent=item.q.e;
+  }
+  updateCombo(); showNext();
+}
+function quizTimeout(){
+  if(answered) return; answered=true; run.asked++;
+  var item=queue[qi]; revealAnswers($("answers"), item.q, item._order);
+  run.combo=0; run.lives--; renderLives("lives", run.lives, run.maxLives); updateCombo(); shakeBody();
+  $("explain").className="explain bad show";
+  $("exVerdict").textContent="Trop tard —"; $("exText").textContent=item.q.e; showNext();
+}
+function showNext(){
+  var nb=$("nextBtn"); nb.textContent=(qi>=queue.length-1||run.lives<=0)?"Voir le résultat ▶":"Continuer ▶"; nb.classList.add("show");
+}
+function nextQuestion(){ qi++; loadQuestion(); }
+function updateCombo(){ var c=$("combo"); c.textContent="x"+Math.min(5,Math.max(1,run.combo||1));
+  c.classList.toggle("on", run.combo>=2);
+  if(run.combo>=2&&!prefersReduced){ c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); } }
+
+// ======================================================================
+// 6. ASSETS — abstraction des sprites (Kenney Pixel Platformer, CC0)
+//    Pour brancher TES PNG :
+//      • change ASSETS.base / sheets[*].src (feuille de sprites découpée en grille), ou
+//      • donne à un sprite sa propre image :  { src:"mon_perso.png", fb:"#fff" }
+//    Si une image manque, un placeholder coloré (fb + shape) est dessiné : le jeu ne plante jamais.
+//    i = index dans la feuille (ligne par ligne) ; tableau = variantes / frames d'animation.
+// ======================================================================
+var ASSETS = {
+  base: "assets/",
+  sheets: {
+    tiles: { src:"tilemap_packed.png",            tw:18, th:18, cols:20 },
+    chars: { src:"tilemap-characters_packed.png", tw:24, th:24, cols:9  }
+  },
+  sprites: {
+    // --- décor & tuiles (feuille "tiles") ---
+    grass:    { sheet:"tiles", i:2,         fb:"#3fb86a", shape:"rect" },
+    dirt:     { sheet:"tiles", i:[24,25],   fb:"#a0623a", shape:"rect" },
+    platL:    { sheet:"tiles", i:40,        fb:"#d9a05b", shape:"rect" },
+    platM:    { sheet:"tiles", i:[41,42],   fb:"#d9a05b", shape:"rect" },
+    platR:    { sheet:"tiles", i:43,        fb:"#d9a05b", shape:"rect" },
+    spikes:   { sheet:"tiles", i:68,        fb:"#cfd6e0", shape:"tri" },
+    crystal:  { sheet:"tiles", i:67,        fb:"#4cc9ff", shape:"diamond" },
+    spring:   { sheet:"tiles", i:107,       fb:"#ff5a5a", shape:"rect" },
+    flagTop:  { sheet:"tiles", i:[111,112], fb:"#ff2e6a", shape:"tri" },
+    flagPole: { sheet:"tiles", i:131,       fb:"#cfd6e0", shape:"rect" },
+    pine:     { sheet:"tiles", i:126,       fb:"#2f9e63", shape:"tri" },
+    sprout:   { sheet:"tiles", i:125,       fb:"#4cd27a", shape:"tri" },
+    mushroom: { sheet:"tiles", i:128,       fb:"#e0503c", shape:"circle" },
+    sign:     { sheet:"tiles", i:85,        fb:"#b57a45", shape:"rect" },
+    cactus:   { sheet:"tiles", i:127,       fb:"#3fa655", shape:"rect" },
+    // --- personnages (feuille "chars") ---
+    playerIdle: { sheet:"chars", i:0,       fb:"#4cd27a", shape:"circle" },
+    playerWalk: { sheet:"chars", i:[0,1],   fb:"#4cd27a", shape:"circle" },
+    playerJump: { sheet:"chars", i:1,       fb:"#4cd27a", shape:"circle" },
+    walker:     { sheet:"chars", i:[18,19], fb:"#3aa0ff", shape:"rect" },
+    walkerDead: { sheet:"chars", i:20,       fb:"#3aa0ff", shape:"rect" },
+    spiky:      { sheet:"chars", i:[15,16], fb:"#ff5a3c", shape:"tri" },
+    bat:        { sheet:"chars", i:[24,25], fb:"#c07a4a", shape:"circle" }
+  }
+};
+
+var Assets = { img:{}, promise:null };
+function assetUrl(u){ return /^(https?:|data:|\/)/.test(u) ? u : ASSETS.base+u; }
+// Précharge toutes les images ; résout TOUJOURS (une image en erreur = null → placeholder).
+Assets.load = function(){
+  if(Assets.promise) return Assets.promise;
+  var urls={};
+  Object.keys(ASSETS.sheets).forEach(function(k){ urls[ASSETS.sheets[k].src]=1; });
+  Object.keys(ASSETS.sprites).forEach(function(k){ var s=ASSETS.sprites[k]; if(s.src) urls[s.src]=1; });
+  var list=Object.keys(urls);
+  Assets.promise=new Promise(function(resolve){
+    var left=list.length; if(!left){ resolve(); return; }
+    function done(){ if(--left===0) resolve(); }
+    list.forEach(function(u){
+      var im=new Image();
+      im.onload=function(){ Assets.img[u]=im; done(); };
+      im.onerror=function(){ Assets.img[u]=null; done(); };
+      im.src=assetUrl(u);
+    });
+    setTimeout(resolve, 6000);                 // sécurité : on ne bloque jamais le jeu
+  });
+  return Assets.promise;
+};
+
+function placeholder(c, d, x, y, w, h){
+  c.save(); c.fillStyle=d.fb||"#ff00ff"; c.strokeStyle="rgba(0,0,0,.45)"; c.lineWidth=1; c.beginPath();
+  if(d.shape==="diamond"){ c.moveTo(x+w/2,y+1); c.lineTo(x+w-2,y+h/2); c.lineTo(x+w/2,y+h-1); c.lineTo(x+2,y+h/2); c.closePath(); }
+  else if(d.shape==="tri"){ c.moveTo(x+w/2,y+2); c.lineTo(x+w-1,y+h-1); c.lineTo(x+1,y+h-1); c.closePath(); }
+  else if(d.shape==="circle"){ c.arc(x+w/2,y+h/2,Math.min(w,h)/2-1,0,6.283); }
+  else { c.rect(x+.5,y+.5,w-1,h-1); }
+  c.fill(); c.stroke(); c.restore();
+}
+// Dessine un sprite par son nom ; variant choisit la variante/frame ; flip = miroir horizontal.
+function drawSprite(c, name, dx, dy, variant, flip){
+  var d=ASSETS.sprites[name]; if(!d) return;
+  var sh=d.sheet?ASSETS.sheets[d.sheet]:null, img=null, sx=0, sy=0, sw=d.w||18, shh=d.h||18;
+  var idx=Array.isArray(d.i) ? d.i[(((variant|0)%d.i.length)+d.i.length)%d.i.length] : (d.i|0);
+  if(sh){ img=Assets.img[sh.src]||null; sw=sh.tw; shh=sh.th; sx=(idx%sh.cols)*sw; sy=Math.floor(idx/sh.cols)*shh; }
+  else if(d.src){ img=Assets.img[d.src]||null; if(img){ sw=img.width; shh=img.height; } }
+  if(!img){ placeholder(c,d,dx,dy,sw,shh); return; }
+  if(flip){ c.save(); c.translate(dx+sw,dy); c.scale(-1,1); c.drawImage(img,sx,sy,sw,shh,0,0,sw,shh); c.restore(); }
+  else c.drawImage(img,sx,sy,sw,shh,dx,dy,sw,shh);
+}
+
+// ======================================================================
+// 7. NIVEAUX — format texte, 1 caractère = 1 tuile de 18 px (12 lignes)
+//    .  vide        #  sol (herbe auto)   =  plateforme      ^  piques (danger)
+//    P  départ      X  sortie (drapeau)   C  cristal de données (→ QCM)
+//    E  ennemi qui patrouille (saute dessus pour l'écraser)
+//    Z  ennemi à pointes (impossible à écraser : évite-le)
+//    B  chauve-souris volante   H  ressort
+//    décor : t pin · g pousse · m champignon · w panneau · k cactus
+//    themes = domaines du cours dont les cristaux tirent leurs QCM.
+// ======================================================================
+var LEVELS = [
+  {
+    id:"dc", name:"Datacenter VMware", sub:"Maintenance & disponibilité",
+    themes:["maint","dispo"], sky:["#1a0e3a","#3a1570"], accent:"#b06bff",
+    map:[
+      "........................................................................",
+      "........................................................................",
+      "........................................................................",
+      "........................................................................",
+      "........................................................................",
+      ".........................................C..............................",
+      "........................................===.............................",
+      "......................C...................................C.............",
+      ".....................====...........===..................====...........",
+      "..P..t..g..Ew..............^^.E...............C.....m.E........Z..C..X..",
+      "################..##############..##############..######################",
+      "################..##############..##############..######################"
+    ]
+  },
+  {
+    id:"cloud", name:"Cloud Azure", sub:"Reprise, PCA/PRA & sauvegardes",
+    themes:["bia","pcapra","backup"], sky:["#0a2433","#13597a"], accent:"#36c7d6",
+    map:[
+      "........................................................................................",
+      "........................................................................................",
+      "........................................................................................",
+      "............................................B...........................................",
+      "........................................................................................",
+      ".......................C.....................................................C..........",
+      "...........................===.............C............................................",
+      "......................===.......====....=======...........C.................===.........",
+      ".................===.....................................===...........===..............",
+      "..P..t......===.........................E.^^^....k...........Z....===..............E.CX.",
+      "##########............................###############..#########.................#######",
+      "##########............................###############..#########.................#######"
+    ]
+  },
+  {
+    id:"crise", name:"Salle de crise", sub:"Incident, changement & supervision",
+    themes:["incident","cab","supervision"], sky:["#2a0a1e","#5a1240"], accent:"#ff2e6a",
+    map:[
+      "................................................................................................",
+      "................................................................................................",
+      "................................................................................................",
+      "....................................B......C....................................................",
+      "................................................................................................",
+      "......................................C...===...................................................",
+      "................C.................................................C..........C..................",
+      ".....................................===.......===..............................................",
+      "..............####...............................................####.......===.................",
+      "..P...g.......####...E.^^.Z.....===...................E.^.Z.C....####...E.^............E.....X..",
+      "#############.####.##########......................#############.################...############",
+      "#############.####.##########......................#############.################...############"
+    ]
+  }
+];
+
+// ======================================================================
+// 8. MODE AVENTURE — moteur de plateforme 2D (canvas, delta-time, pas fixe)
+// ======================================================================
+var Pool = { used:[] };           // tirage de QCM sans répétition pendant une partie
+Pool.reset = function(){ Pool.used=[]; };
+Pool.next = function(themeIds){
+  var c=[];
+  themeIds.forEach(function(id){ BANK[id].forEach(function(q){ if(Pool.used.indexOf(q)<0) c.push({theme:themeById(id), q:q}); }); });
+  if(!c.length){ Pool.used=[]; return Pool.next(themeIds); }
+  var p=c[Math.floor(Math.random()*c.length)]; Pool.used.push(p.q); return p;
+};
+
+var Adv = (function(){
+  var T=18, VW=384, VH=216, FIXED=1/120;                       // tuile, vue logique, pas physique
+  var GRAV=1500, JUMP=440, MAXV=118, ACC=1100, FRIC=1300, FRIC_AIR=420, MAXFALL=540;
+  var COYOTE=0.1, JBUF=0.12, SPRING=640;
+  var cv=$("adv"), ctx=cv.getContext("2d");
+  var L=null, P=null, levelIdx=0, phase="IDLE", running=false, raf=0, ovShownAt=0, last=0, acc=0, animT=0, camX=0, camY=0;
+  var parts=[], pops=[], curCrystal=null, msgT=0, shakeT=0, ovAction1=null, ovAction2=null, skyGrad=null;
+  var keys={}, touch={left:false,right:false,jump:false};
+  var input={left:false,right:false,jump:false};
+
+  // ---------- overlay générique (intro / pause / fin de niveau) ----------
+  function showOv(k,t,d,h,b1,f1,b2,f2){
+    $("ovK").textContent=k||""; $("ovT").textContent=t||""; $("ovD").textContent=d||""; $("ovH").textContent=h||"";
+    $("ovB1").textContent=b1; ovAction1=f1;
+    var B2=$("ovB2"); if(b2){ B2.style.display=""; B2.textContent=b2; ovAction2=f2; } else { B2.style.display="none"; ovAction2=null; }
+    ovShownAt=performance.now(); $("ov").classList.add("show"); $("ovB1").focus({preventScroll:true});
+  }
+  function hideOv(){ $("ov").classList.remove("show"); ovAction1=null; ovAction2=null; }
+  function ovReady(){ return performance.now()-ovShownAt>350; }   // évite qu'un même appui active deux overlays d'affilée
+  $("ovB1").addEventListener("click", function(){ if(ovAction1 && ovReady()) ovAction1(); });
+  $("ovB2").addEventListener("click", function(){ if(ovAction2 && ovReady()) ovAction2(); });
+  function say(msg){ var m=$("advMsg"); m.textContent=msg; m.classList.add("show"); msgT=2.2; }
+
+  function hud(){
+    renderLives("advLives", run.lives, run.maxLives);
+    $("advCrystals").textContent="◆ "+(L?collected():0)+"/"+(L?L.total:0);
+    var c=$("advCombo"); c.textContent="x"+Math.min(5,Math.max(1,run.combo||1)); c.classList.toggle("on", run.combo>=2);
+    if(run.combo>=2&&!prefersReduced){ c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); }
+  }
+  function collected(){ var n=0; for(var i=0;i<L.crystals.length;i++) if(L.crystals[i].taken) n++; return n; }
+
+  // ---------- cycle de vie ----------
+  function start(){
+    newRun(STATE.ADVENTURE); Pool.reset(); levelIdx=0;
+    $("advScore").textContent="0"; L=null; hud();
+    go(STATE.ADVENTURE);
+    phase="LOAD";
+    showOv("Chargement","Préparation des sprites…","","","…",null);
+    $("ovB1").disabled=true;
+    Assets.load().then(function(){ $("ovB1").disabled=false; loadLevel(0); });
+    begin();
+  }
+  function begin(){
+    if(running) return; running=true; last=performance.now(); acc=0; raf=requestAnimationFrame(frame);
+  }
+  function stop(){ running=false; cancelAnimationFrame(raf); phase="IDLE"; hideOv(); closeModal(); releaseAll(); }
+
+  function loadLevel(i){
+    levelIdx=i; L=buildLevel(LEVELS[i]);
+    setTheme(L.def.accent);
+    skyGrad=ctx.createLinearGradient(0,0,0,VH); skyGrad.addColorStop(0,L.def.sky[0]); skyGrad.addColorStop(1,L.def.sky[1]);
+    parts=[]; pops=[]; resetPlayer(); snapCamera();
+    $("advTag").textContent="Niv "+(i+1)+"/"+LEVELS.length+" · "+L.def.name; hud();
+    phase="INTRO";
+    showOv("NIVEAU "+(i+1)+" / "+LEVELS.length, L.def.name, L.def.sub+" — collecte les "+L.total+" cristaux de données (chacun déclenche un QCM), puis rejoins le drapeau.",
+      "Évite les piques et les ennemis à pointes · saute sur les ennemis bleus", "▶ Jouer", function(){ hideOv(); phase="PLAY"; last=performance.now(); });
+  }
+
+  // ---------- construction d'un niveau depuis ses lignes de texte ----------
+  function buildLevel(def){
+    var rows=def.map, H=rows.length, W=rows[0].length;
+    var lv={def:def, W:W, H:H, grid:[], crystals:[], enemies:[], decor:[], startTx:1, startTy:1, exit:null, total:0};
+    for(var y=0;y<H;y++){ lv.grid[y]=rows[y].split(""); }
+    for(y=0;y<H;y++) for(var x=0;x<W;x++){
+      var ch=lv.grid[y][x], clear=true;
+      if(ch==="P"){ lv.startTx=x; lv.startTy=y; }
+      else if(ch==="X"){ lv.exit={tx:x,ty:y}; }
+      else if(ch==="C"){ lv.crystals.push({tx:x,ty:y,x:x*T,y:y*T,taken:false,cd:0}); }
+      else if(ch==="E"){ lv.enemies.push({type:"E",x:x*T+2,y:(y+1)*T-12,w:14,h:12,dir:-1,speed:28,alive:true,dead:0,stomp:true}); }
+      else if(ch==="Z"){ lv.enemies.push({type:"Z",x:x*T+2,y:(y+1)*T-16,w:14,h:16,dir:1,speed:22,alive:true,dead:0,stomp:false}); }
+      else if(ch==="B"){ lv.enemies.push({type:"B",x:x*T+2,y:y*T,y0:y*T,x0:x*T+2,w:14,h:12,dir:1,speed:34,alive:true,dead:0,stomp:true,ph:Math.random()*6}); }
+      else if("tgmwk".indexOf(ch)>=0){ lv.decor.push({tx:x,ty:y,s:{t:"pine",g:"sprout",m:"mushroom",w:"sign",k:"cactus"}[ch]}); }
+      else clear=false;
+      if(clear) lv.grid[y][x]=".";
+    }
+    lv.total=lv.crystals.length;
+    return lv;
+  }
+  function solidAt(tx,ty){
+    if(tx<0||tx>=L.W) return true;        // murs invisibles aux bords
+    if(ty<0||ty>=L.H) return false;       // le vide : trous = chute
+    var c=L.grid[ty][tx]; return c==="#"||c==="=";
+  }
+  function resetPlayer(){
+    P={x:L.startTx*T+3, y:L.startTy*T, w:12, h:18, vx:0, vy:0, onGround:false, face:1, coyote:0, jumpBuf:0, inv:0, stun:0, safeX:L.startTx*T+3, safeY:L.startTy*T, safeT:0};
+  }
+
+  // ---------- entrées clavier + tactile ----------
+  function recompute(){
+    input.left  = !!(keys.arrowleft||keys.a||keys.q) || touch.left;
+    input.right = !!(keys.arrowright||keys.d) || touch.right;
+    input.jump  = !!(keys.arrowup||keys.w||keys.z||keys[" "]) || touch.jump;
+  }
+  function releaseAll(){ keys={}; touch.left=touch.right=touch.jump=false; ["tcLeft","tcRight","tcJump"].forEach(function(id){ $(id).classList.remove("on"); }); recompute(); }
+  function pressJump(){ if(P) P.jumpBuf=JBUF; }
+  function onKey(e, down){
+    var k=(e.key||"").toLowerCase();
+    if(["arrowleft","arrowright","arrowup","arrowdown"," "].indexOf(k)>=0 && state===STATE.ADVENTURE) e.preventDefault();
+    var wasJump=input.jump;
+    keys[k]=down; recompute();
+    if(down && !e.repeat && input.jump && !wasJump && phase==="PLAY") pressJump();
+  }
+  function bindTouch(id, name){
+    var el=$(id);
+    function on(e){ e.preventDefault(); touch[name]=true; el.classList.add("on"); recompute(); if(name==="jump"&&phase==="PLAY") pressJump(); }
+    function off(e){ e.preventDefault(); touch[name]=false; el.classList.remove("on"); recompute(); }
+    el.addEventListener("pointerdown", on);
+    ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ el.addEventListener(ev, off); });
+    el.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+  }
+  bindTouch("tcLeft","left"); bindTouch("tcRight","right"); bindTouch("tcJump","jump");
+
+  // ---------- boucle : requestAnimationFrame + delta-time, physique à pas fixe ----------
+  function frame(ts){
+    if(!running) return;
+    raf=requestAnimationFrame(frame);
+    var dt=Math.min(0.1,(ts-last)/1000); last=ts;
+    if(phase==="PLAY"){
+      acc+=dt;
+      while(acc>=FIXED){ step(FIXED); acc-=FIXED; if(phase!=="PLAY"){ acc=0; break; } }
+    }
+    if(L){ animT+=dt; updateFx(dt); updateCamera(dt); render(); }
+  }
+
+  function step(h){
+    var p=P;
+    p.inv=Math.max(0,p.inv-h); p.stun=Math.max(0,p.stun-h); p.coyote-=h; p.jumpBuf-=h;
+    for(var i=0;i<L.crystals.length;i++) L.crystals[i].cd=Math.max(0,L.crystals[i].cd-h);
+
+    // --- déplacement horizontal ---
+    var dir = p.stun>0 ? 0 : (input.right?1:0)-(input.left?1:0);
+    if(dir){ p.vx=clamp(p.vx+dir*ACC*h,-MAXV,MAXV); p.face=dir; }
+    else if(p.stun<=0){ var f=(p.onGround?FRIC:FRIC_AIR)*h; p.vx = p.vx>0 ? Math.max(0,p.vx-f) : Math.min(0,p.vx+f); }
+    // --- saut (coyote time + buffer), hauteur variable ---
+    if(p.onGround) p.coyote=COYOTE;
+    if(p.jumpBuf>0 && p.coyote>0){ p.vy=-JUMP; p.jumpBuf=0; p.coyote=0; p.onGround=false; }
+    var g = GRAV*((p.vy<0 && !input.jump)?2.2:1);
+    p.vy=Math.min(MAXFALL, p.vy+g*h);
+
+    // --- collisions tilemap, axe par axe ---
+    p.x+=p.vx*h; collideX(p);
+    p.onGround=false;
+    p.y+=p.vy*h; collideY(p);
+
+    // dernière position sûre (respawn après un piège ou un trou)
+    p.safeT-=h;
+    if(p.onGround && p.safeT<=0){
+      var tx=Math.floor((p.x+p.w/2)/T), ty=Math.floor((p.y+p.h-1)/T);
+      if(solidAt(Math.floor(p.x/T),ty+1) && solidAt(Math.floor((p.x+p.w-1)/T),ty+1) &&
+         L.grid[ty][tx-1]!=="^" && L.grid[ty][tx]!=="^" && L.grid[ty][tx+1]!=="^"){ p.safeX=p.x; p.safeY=p.y; p.safeT=0.2; }
+    }
+
+    // --- ressorts, piques ---
+    var x0=Math.floor(p.x/T), x1=Math.floor((p.x+p.w-1)/T), y0=Math.floor(p.y/T), y1=Math.floor((p.y+p.h-1)/T);
+    for(var ty2=y0;ty2<=y1;ty2++) for(var tx2=x0;tx2<=x1;tx2++){
+      if(ty2<0||ty2>=L.H) continue;
+      var c=L.grid[ty2][tx2];
+      if(c==="H" && p.vy>=0){ p.vy=-SPRING; p.onGround=false; spark(tx2*T+9, ty2*T+9, "#ff8a8a", 6); }
+      else if(c==="^" && p.y+p.h > ty2*T+9 && p.x+p.w-2 > tx2*T+2 && p.x+2 < tx2*T+T-2){ hurt("spike"); }
+    }
+    // --- ennemis ---
+    updateEnemies(h);
+    // --- cristaux ---
+    for(i=0;i<L.crystals.length;i++){
+      var cr=L.crystals[i]; if(cr.taken||cr.cd>0) continue;
+      if(p.x+p.w>cr.x+3 && p.x<cr.x+T-3 && p.y+p.h>cr.y+3 && p.y<cr.y+T-3){ openQuestion(cr); return; }
+    }
+    // --- sortie ---
+    var ex=L.exit;
+    if(ex && p.x+p.w>ex.tx*T+4 && p.x<ex.tx*T+T-4 && p.y+p.h>(ex.ty-1)*T && p.y<(ex.ty+1)*T){
+      if(collected()>=L.total){ levelClear(); return; }
+      if(msgT<=0.2) say("Il reste "+(L.total-collected())+" cristal"+(L.total-collected()>1?"ux":"")+" à collecter !");
+    }
+    // --- chute dans le vide ---
+    if(p.y>L.H*T+30){ hurt("pit"); }
+  }
+
+  function collideX(p){
+    var x0=Math.floor(p.x/T), x1=Math.floor((p.x+p.w-1e-3)/T), y0=Math.floor(p.y/T), y1=Math.floor((p.y+p.h-1e-3)/T);
+    for(var ty=y0;ty<=y1;ty++) for(var tx=x0;tx<=x1;tx++) if(solidAt(tx,ty)){
+      if(p.vx>0) p.x=tx*T-p.w; else if(p.vx<0) p.x=(tx+1)*T; p.vx=0;
+    }
+  }
+  function collideY(p){
+    var x0=Math.floor(p.x/T), x1=Math.floor((p.x+p.w-1e-3)/T), y0=Math.floor(p.y/T), y1=Math.floor((p.y+p.h-1e-3)/T);
+    for(var ty=y0;ty<=y1;ty++) for(var tx=x0;tx<=x1;tx++) if(solidAt(tx,ty)){
+      if(p.vy>0){ p.y=ty*T-p.h; p.onGround=true; } else if(p.vy<0){ p.y=(ty+1)*T; } p.vy=0;
+    }
+  }
+
+  function updateEnemies(h){
+    var p=P;
+    for(var i=0;i<L.enemies.length;i++){
+      var e=L.enemies[i];
+      if(!e.alive){ e.dead+=h; continue; }
+      if(e.type==="B"){                                   // chauve-souris : va-et-vient + ondulation
+        e.x+=e.dir*e.speed*h; if(Math.abs(e.x-e.x0)>T*4 || solidAt(Math.floor((e.x+(e.dir>0?e.w:0))/T),Math.floor((e.y+6)/T))) e.dir*=-1;
+        e.y=e.y0+Math.sin(animT*2.2+e.ph)*10;
+      } else {                                            // marcheur : demi-tour au mur ou au bord du vide
+        var nx=e.x+e.dir*e.speed*h, fx=e.dir>0? nx+e.w : nx;
+        var wall=solidAt(Math.floor(fx/T),Math.floor((e.y+e.h/2)/T));
+        var ledge=!solidAt(Math.floor(fx/T),Math.floor((e.y+e.h+2)/T));
+        if(wall||ledge) e.dir*=-1; else e.x=nx;
+      }
+      // contact avec le joueur
+      if(p.x<e.x+e.w && p.x+p.w>e.x && p.y<e.y+e.h && p.y+p.h>e.y){
+        var falling = p.vy>30 && (p.y+p.h)-e.y < 10;
+        if(e.stomp && falling){
+          e.alive=false; e.dead=0; p.vy = input.jump ? -340 : -230; run.score+=50; animScore("advScore", run.score);
+          pop(e.x+e.w/2, e.y-4, "+50"); spark(e.x+e.w/2, e.y+e.h/2, "#ffffff", 8);
+        } else if(p.inv<=0){ hurt("enemy"); }
+      }
+    }
+  }
+
+  // ---------- dégâts ----------
+  function hurt(kind){
+    if(phase!=="PLAY") return;
+    if(kind!=="pit" && P.inv>0) return;
+    run.lives--; run.combo=0; hud(); shakeT=0.3;
+    if(run.lives<=0){ gameOver(); return; }
+    if(kind==="enemy"){ P.vy=-220; P.vx=-P.face*140; P.stun=0.25; P.inv=1.6; }
+    else { P.x=P.safeX; P.y=P.safeY; P.vx=0; P.vy=0; P.inv=1.6; snapCamera(); }
+  }
+  function gameOver(){
+    phase="OVER";
+    showOv("Mission échouée","Plus de vies","Le SI de CampusCloud reste vulnérable… Révise les explications et retente ta chance.","","Voir le résultat",function(){ hideOv(); finishRun(false); });
+  }
+
+  // ---------- cristal → QCM ----------
+  function openQuestion(cr){
+    phase="QUESTION"; curCrystal=cr; releaseAll();
+    var pick=Pool.next(L.def.themes); setTheme(pick.theme.color);
+    $("qTag").textContent=pick.theme.name;
+    $("qQuestion").textContent=pick.q.q;
+    $("qExplain").className="explain"; $("qNext").className="next-btn";
+    var answeredQ=false, order;
+    order=paintAnswers($("qAnswers"), pick.q, function(correct, btn){
+      if(answeredQ) return; answeredQ=true; run.asked++;
+      revealAnswers($("qAnswers"), pick.q, order);
+      var ex=$("qExplain"), v=$("qVerdict"), tx=$("qText");
+      if(correct){
+        btn.classList.remove("dim"); btn.classList.add("correct");
+        run.combo++; if(run.combo>run.bestCombo) run.bestCombo=run.combo; run.correct++;
+        var pts=100*Math.min(5,run.combo); run.score+=pts; animScore("advScore", run.score);
+        cr.taken=true; spark(cr.x+9, cr.y+9, "#4cc9ff", 16); pop(cr.x+9, cr.y-2, "+"+pts);
+        ex.className="explain good show"; v.textContent=run.combo>=2?("Cristal validé ! x"+Math.min(5,run.combo)):"Cristal validé !";
+      } else {
+        btn.classList.remove("dim"); btn.classList.add("wrong");
+        run.combo=0; run.lives--; shakeBody();
+        cr.cd=2.2;                                         // le cristal reste, avec une autre question au prochain essai
+        ex.className="explain bad show"; v.textContent="Raté — −1 vie";
+      }
+      tx.textContent=pick.q.e; hud();
+      var nb=$("qNext"); nb.textContent = run.lives<=0 ? "Voir le résultat ▶" : "Continuer ▶"; nb.classList.add("show"); nb.focus({preventScroll:true});
+    });
+    $("qModal").classList.add("show");
+    $("qModal").scrollTop=0;
+    qAnswered=function(){ return answeredQ; };
+  }
+  var qAnswered=function(){ return false; };
+  function closeModal(){ $("qModal").classList.remove("show"); }
+  function questionDone(){
+    closeModal();
+    if(run.lives<=0){ gameOver(); return; }
+    var cr=curCrystal;
+    if(!cr.taken){ P.vx=-P.face*150; P.vy=-200; P.stun=0.25; P.inv=1.2; }     // « on recule »
+    else if(collected()>=L.total){ say("Tous les cristaux sont validés — rejoins le drapeau !"); }
+    phase="PLAY"; last=performance.now(); acc=0;
+  }
+  $("qNext").addEventListener("click", function(){ if(phase==="QUESTION" && qAnswered()) questionDone(); });
+
+  // ---------- fin de niveau ----------
+  function levelClear(){
+    phase="CLEAR"; releaseAll();
+    var bonus=250+run.lives*50; run.score+=bonus; run.levelsDone++; animScore("advScore", run.score);
+    var last_=levelIdx>=LEVELS.length-1;
+    if(!last_ && run.lives<run.maxLives) run.lives++;
+    hud(); spark(P.x+6,P.y+6,"#2ef0a6",20);
+    if(last_){
+      showOv("Mission accomplie","Les 3 niveaux sont validés !","Bonus de fin de niveau : +"+bonus+" pts. Le SI de CampusCloud est résilient.","","Voir le résultat",function(){ hideOv(); finishRun(true); });
+    } else {
+      showOv("Niveau "+(levelIdx+1)+" terminé","+"+bonus+" pts","Bonus : 250 + 50 par vie restante. Une vie récupérée pour la suite.","","Niveau suivant ▶",function(){ hideOv(); loadLevel(levelIdx+1); });
+    }
+  }
+
+  // ---------- pause ----------
+  function pause(){
+    if(phase!=="PLAY") return;
+    phase="PAUSE"; releaseAll();
+    showOv("Pause","Jeu en pause","","","▶ Reprendre",resume,"⌂ Menu",function(){ hideOv(); go(STATE.TITLE); });
+  }
+  function resume(){ if(phase!=="PAUSE") return; hideOv(); phase="PLAY"; last=performance.now(); acc=0; }
+
+  // ---------- effets visuels ----------
+  function spark(x,y,col,n){ if(prefersReduced) n=Math.min(n,4);
+    for(var i=0;i<n;i++){ var a=Math.random()*6.283, s=30+Math.random()*70; parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-30,life:.5+Math.random()*.3,col:col}); } }
+  function pop(x,y,txt){ pops.push({x:x,y:y,txt:txt,life:1}); }
+  function updateFx(dt){
+    for(var i=parts.length-1;i>=0;i--){ var q=parts[i]; q.life-=dt; if(q.life<=0){ parts.splice(i,1); continue; } q.x+=q.vx*dt; q.y+=q.vy*dt; q.vy+=260*dt; }
+    for(i=pops.length-1;i>=0;i--){ var o=pops[i]; o.life-=dt; if(o.life<=0){ pops.splice(i,1); continue; } o.y-=22*dt; }
+    if(shakeT>0) shakeT-=dt;
+    if(msgT>0){ msgT-=dt; if(msgT<=0) $("advMsg").classList.remove("show"); }
+    // retire les ennemis écrasés après l'animation
+    if(L) for(i=L.enemies.length-1;i>=0;i--){ var e=L.enemies[i]; if(!e.alive && e.dead>0.5) L.enemies.splice(i,1); }
+  }
+
+  // ---------- caméra (suit le joueur ; lissée sauf reduced-motion) ----------
+  function camTarget(){
+    var w=L.W*T, h=L.H*T;
+    var tx = w<=VW ? (w-VW)/2 : clamp(P.x+P.w/2-VW/2+P.face*14, 0, w-VW);
+    var ty = h<=VH ? (h-VH)/2 : clamp(P.y+P.h/2-VH/2, 0, h-VH);
+    return [tx,ty];
+  }
+  function snapCamera(){ var t=camTarget(); camX=t[0]; camY=t[1]; }
+  function updateCamera(dt){ var t=camTarget(); if(prefersReduced){ camX=t[0]; camY=t[1]; return; }
+    var k=Math.min(1,dt*7); camX+=(t[0]-camX)*k; camY+=(t[1]-camY)*k; }
+
+  // ---------- rendu ----------
+  function hash(n){ var s=Math.sin(n*127.1)*43758.5453; return s-Math.floor(s); }
+  function drawRacks(par, w, gap, hMin, hMax, col, lit){
+    var step=w+gap, i0=Math.floor(camX*par/step)-1, i1=i0+Math.ceil(VW/step)+3;
+    for(var i=i0;i<=i1;i++){
+      var x=Math.round(i*step-camX*par), hh=Math.round(hMin+hash(i+par*10)*(hMax-hMin)), y=VH-hh;
+      ctx.fillStyle=col; ctx.fillRect(x,y,w,hh);
+      ctx.fillStyle="rgba(255,255,255,.05)"; ctx.fillRect(x,y,w,2);
+      for(var r=0;r<Math.floor(hh/12);r++) for(var c=0;c<3;c++){
+        var on=hash(i*31+r*7+c)>.55; if(!on) continue;
+        var blink = prefersReduced ? 1 : (.55+.45*Math.sin(animT*2+i+r*1.3+c));
+        ctx.globalAlpha=blink*.8; ctx.fillStyle=lit[(i+r+c)%lit.length]; ctx.fillRect(x+4+c*8,y+6+r*12,4,2);
+      }
+      ctx.globalAlpha=1;
+    }
+  }
+  function render(){
+    var c=ctx; c.imageSmoothingEnabled=false;
+    c.save();
+    c.fillStyle=skyGrad; c.fillRect(0,0,VW,VH);
+    // étoiles / points de données
+    c.fillStyle="rgba(255,255,255,.35)";
+    for(var s=0;s<40;s++){ var sx=((hash(s)*VW*3)-camX*0.08)%VW; if(sx<0) sx+=VW; c.fillRect(Math.round(sx),Math.round(hash(s+90)*VH*0.6),1,1); }
+    drawRacks(0.22, 34, 40, 70, 130, "rgba(10,5,22,.55)", ["#b06bff","#2ef0a6"]);
+    drawRacks(0.45, 30, 56, 40, 90,  "rgba(10,5,22,.8)",  ["#ff2e6a","#36c7d6","#ffab2e"]);
+
+    var sh = (shakeT>0 && !prefersReduced) ? (Math.random()*4-2) : 0;
+    c.translate(Math.round(-camX+sh), Math.round(-camY));
+    var tx0=Math.max(0,Math.floor(camX/T)), tx1=Math.min(L.W-1,Math.floor((camX+VW)/T)+1);
+    var ty0=Math.max(0,Math.floor(camY/T)), ty1=Math.min(L.H-1,Math.floor((camY+VH)/T)+1);
+
+    // décor (derrière)
+    for(var i=0;i<L.decor.length;i++){ var d=L.decor[i]; if(d.tx<tx0-1||d.tx>tx1) continue; drawSprite(c,d.s,d.tx*T,d.ty*T,d.tx); }
+    // tuiles
+    for(var ty=ty0;ty<=ty1;ty++) for(var tx=tx0;tx<=tx1;tx++){
+      var ch=L.grid[ty][tx], X=tx*T, Y=ty*T;
+      if(ch==="#"){ var above=ty>0?L.grid[ty-1][tx]:"."; drawSprite(c,(above==="#"||above==="=")?"dirt":"grass",X,Y,tx+ty); }
+      else if(ch==="="){ var lft=tx>0&&L.grid[ty][tx-1]==="=", rgt=tx<L.W-1&&L.grid[ty][tx+1]==="=";
+        drawSprite(c, !lft?"platL":(!rgt?"platR":"platM"), X, Y, tx); }
+      else if(ch==="^") drawSprite(c,"spikes",X,Y,0);
+      else if(ch==="H") drawSprite(c,"spring",X,Y,0);
+    }
+    // sortie : drapeau (grisé tant qu'il reste des cristaux)
+    if(L.exit){
+      var open=collected()>=L.total, fx=L.exit.tx*T, fy=L.exit.ty*T;
+      c.globalAlpha=open?1:.5;
+      drawSprite(c,"flagPole",fx,fy,0); drawSprite(c,"flagTop",fx,fy-T,prefersReduced?0:Math.floor(animT*4));
+      if(open && !prefersReduced){ c.globalAlpha=.25+.15*Math.sin(animT*5); c.fillStyle="#2ef0a6"; c.beginPath(); c.arc(fx+9,fy-4,16,0,6.283); c.fill(); }
+      c.globalAlpha=1;
+    }
+    // cristaux
+    for(i=0;i<L.crystals.length;i++){ var cr=L.crystals[i]; if(cr.taken) continue;
+      if(cr.tx<tx0-1||cr.tx>tx1+1) continue;
+      var bob = prefersReduced ? 0 : Math.sin(animT*3+cr.tx)*2;
+      c.globalAlpha=(cr.cd>0)?.4:1;
+      if(!prefersReduced){ c.save(); c.globalAlpha*=.22+.1*Math.sin(animT*4+cr.tx); c.fillStyle="#4cc9ff"; c.beginPath(); c.arc(cr.x+9,cr.y+9+bob,13,0,6.283); c.fill(); c.restore(); }
+      drawSprite(c,"crystal",cr.x,cr.y+bob,0); c.globalAlpha=1;
+    }
+    // ennemis
+    for(i=0;i<L.enemies.length;i++){ var e=L.enemies[i], frm=prefersReduced?0:Math.floor(animT*6);
+      var ex=Math.round(e.x+e.w/2-12), ey=Math.round(e.y+e.h-23);
+      if(!e.alive){ if(e.type==="E"||e.type==="B"){ c.globalAlpha=Math.max(0,1-e.dead*2); drawSprite(c,"walkerDead",ex,ey+(e.type==="B"?0:0),0,e.dir<0); c.globalAlpha=1; } continue; }
+      drawSprite(c, e.type==="E"?"walker":(e.type==="Z"?"spiky":"bat"), ex, ey, frm, e.dir>0);
+      if(DEBUG){ c.strokeStyle="#f0f"; c.strokeRect(e.x+.5,e.y+.5,e.w-1,e.h-1); }
+    }
+    // joueur
+    var p=P;
+    if(p){
+      var blink = p.inv>0 && !prefersReduced && (Math.floor(p.inv*14)%2===0);
+      if(!blink){
+        if(p.inv>0&&prefersReduced) c.globalAlpha=.5;
+        var nm = !p.onGround ? "playerJump" : (Math.abs(p.vx)>12 ? "playerWalk" : "playerIdle");
+        drawSprite(c, nm, Math.round(p.x+p.w/2-12), Math.round(p.y+p.h-23), Math.floor(animT*10), p.face<0);
+        c.globalAlpha=1;
+      }
+      if(DEBUG){ c.strokeStyle="#0f0"; c.strokeRect(p.x+.5,p.y+.5,p.w-1,p.h-1); }
+    }
+    // particules + textes flottants
+    for(i=0;i<parts.length;i++){ var q=parts[i]; c.globalAlpha=Math.max(0,q.life*2); c.fillStyle=q.col; c.fillRect(Math.round(q.x),Math.round(q.y),2,2); }
+    c.globalAlpha=1; c.font="bold 9px 'Chakra Petch', monospace"; c.textAlign="center";
+    for(i=0;i<pops.length;i++){ var o=pops[i]; c.globalAlpha=Math.min(1,o.life*2); c.fillStyle="#2ef0a6"; c.fillText(o.txt,Math.round(o.x),Math.round(o.y)); }
+    c.globalAlpha=1;
+    c.restore();
+  }
+
+  return {
+    start:start, stop:stop, pause:pause, resume:resume,
+    onKey:onKey,
+    phase:function(){ return phase; },
+    ovPrimary:function(){ if(ovAction1 && ovReady() && $("ov").classList.contains("show")) { ovAction1(); return true; } return false; },
+    questionKey:function(k){
+      if(phase!=="QUESTION") return false;
+      if(!qAnswered()){ var map={"1":0,"2":1,"3":2,"4":3,"a":0,"b":1,"c":2,"d":3}; if(k in map){ var b=$("qAnswers").children[map[k]]; if(b) b.click(); } return true; }
+      if(k==="enter"||k===" "){ questionDone(); } return true;
+    },
+    _load:function(i){ loadLevel(i); hideOv(); phase="PLAY"; },
+    _dbg:function(){ return {L:L,P:P,run:run,phase:phase}; }
+  };
+})();
+
+// ======================================================================
+// 9. RÉSULTAT + PARTAGE
+// ======================================================================
+function finishRun(win){
+  clearInterval(quizTimer);
+  if(win!==undefined) run.won=!!win;
+  var isAdv=run.mode===STATE.ADVENTURE;
+  var acc = run.asked ? run.correct/run.asked : 0;
+  var best=getBest(); if(run.score>best){ best=run.score; setBest(run.score); }
+  $("resEyebrow").textContent = isAdv ? (run.won?"Aventure réussie":"Aventure terminée") : "Mission terminée";
+  $("finalScore").textContent=run.score.toLocaleString("fr-FR");
+  $("rAcc").textContent=Math.round(acc*100)+"%";
+  $("rCombo").textContent="x"+Math.min(5,run.bestCombo)+" ("+run.bestCombo+")";
+  $("rBest").textContent=best.toLocaleString("fr-FR");
+  $("rLevelsBox").style.display = isAdv ? "" : "none";
+  $("rLevels").textContent = run.levelsDone+"/"+run.levelsTotal;
+  $("rankBadge").textContent=rankFor(acc);
+  setTheme("#b06bff");
+  go(STATE.RESULT);
+}
+function share(){
+  var acc=run.asked?Math.round(run.correct/run.asked*100):0;
+  var mode=run.mode===STATE.ADVENTURE?"Mode Aventure":"Mode Quiz";
+  var txt="🛡️ CyberCrise CampusCloud ("+mode+") — "+run.score.toLocaleString("fr-FR")+" pts ("+rankFor(run.asked?run.correct/run.asked:0)+", "+acc+"% de réussite). À toi de battre mon score !";
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ toast("Score copié — colle-le où tu veux !"); },function(){ toast(txt); });
+  } else { toast(txt); }
+}
+
+// ======================================================================
+// 10. CÂBLAGE (boutons, clavier, tactile, visibilité)
+// ======================================================================
+$("quizBtn").addEventListener("click", startQuiz);
+$("advBtn").addEventListener("click", function(){ Adv.start(); });
+$("replayBtn").addEventListener("click", function(){ if(run.mode===STATE.ADVENTURE) Adv.start(); else startQuiz(); });
+$("shareBtn").addEventListener("click", share);
+$("nextBtn").addEventListener("click", function(){ if(answered) nextQuestion(); });
+$("advPauseBtn").addEventListener("click", function(){ if(Adv.phase()==="PAUSE") Adv.resume(); else Adv.pause(); });
+Array.prototype.forEach.call(document.querySelectorAll("[data-menu]"), function(b){ b.addEventListener("click", function(){ go(STATE.TITLE); }); });
+
+document.addEventListener("keydown", function(e){
+  var k=(e.key||"").toLowerCase();
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(state===STATE.QUIZ){
+    if((k===" "||k==="enter")&&answered&&$("nextBtn").classList.contains("show")){ e.preventDefault(); nextQuestion(); return; }
+    if(!answered && /^[1-4a-d]$/.test(k)){
+      var map={"1":0,"2":1,"3":2,"4":3,"a":0,"b":1,"c":2,"d":3};
+      var btns=$("answers").children; if(btns[map[k]]) btns[map[k]].click();
+    }
+  } else if(state===STATE.ADVENTURE){
+    var ph=Adv.phase();
+    if(ph==="QUESTION"){ if(Adv.questionKey(k)){ e.preventDefault(); } return; }
+    if((k==="enter"||k===" ")&&(ph==="INTRO"||ph==="PAUSE"||ph==="CLEAR"||ph==="OVER")){ e.preventDefault(); if(ph==="PAUSE") Adv.resume(); else Adv.ovPrimary(); return; }
+    if(k==="escape"||k==="p"){ e.preventDefault(); if(ph==="PAUSE") Adv.resume(); else Adv.pause(); return; }
+    Adv.onKey(e,true);
+  } else if(state===STATE.TITLE){
+    if(k==="1"){ startQuiz(); } else if(k==="2"){ Adv.start(); }
+  }
+});
+document.addEventListener("keyup", function(e){ if(state===STATE.ADVENTURE) Adv.onKey(e,false); });
+window.addEventListener("blur", function(){ if(state===STATE.ADVENTURE) Adv.pause(); });
+document.addEventListener("visibilitychange", function(){ if(document.hidden && state===STATE.ADVENTURE) Adv.pause(); });
+
+// contrôles tactiles : visibles sur écran tactile (ou dès le premier toucher)
+if(window.matchMedia && window.matchMedia("(pointer: coarse)").matches) document.body.classList.add("is-touch");
+window.addEventListener("touchstart", function(){ document.body.classList.add("is-touch"); }, {once:true, passive:true});
+
+if(DEBUG) window.__cc={Adv:Adv, run:run, go:go, STATE:STATE, LEVELS:LEVELS, BANK:BANK};
+})();
+</script>
+</body>
+</html>
