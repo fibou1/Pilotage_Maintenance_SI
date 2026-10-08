@@ -152,8 +152,20 @@ body.shake{animation:shake .4s ease}
 @keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-6px,3px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,2px)}}
 
 /* ---------- aventure 2D ---------- */
-.adv-wrap{position:relative;width:100%;max-width:1000px;margin:0 auto;aspect-ratio:16/9;border:1px solid var(--line);border-radius:14px;
-  overflow:hidden;background:#0b0716;box-shadow:0 0 60px -26px var(--theme)}
+.adv-wrap{position:relative;margin:0 auto;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0b0716;
+  box-shadow:0 0 60px -26px var(--theme);aspect-ratio:var(--ar,1.7778);
+  /* aussi grand que possible : toute la largeur, limité par la hauteur de l'écran (HUD + aide déduits) */
+  width:min(100%, calc((100vh - 150px) * var(--ar,1.7778)));
+  width:min(100%, calc((100dvh - 150px) * var(--ar,1.7778)))}
+body[data-state="ADVENTURE"] .stage{max-width:none;padding-top:12px}
+body[data-state="ADVENTURE"] #scrAdv .hud{max-width:calc((100dvh - 150px) * 1.7778);width:100%;margin-left:auto;margin-right:auto}
+.time{font-family:var(--font-hud);font-weight:700;font-size:15px;color:var(--fg);min-width:58px}
+.time.low{color:var(--crit);animation:pulse .8s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+.coin-count{font-family:var(--font-hud);font-weight:700;font-size:15px;color:#ffd23f}
+.key-count{font-family:var(--font-hud);font-weight:700;font-size:14px;color:#ffd23f}
+.power{font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;color:var(--warn);border:1px solid #ffab2e55;border-radius:999px;padding:4px 10px;background:#ffab2e14}
+.icon-btn{min-width:38px;text-align:center;font-size:15px;padding:6px 10px}
 #adv{width:100%;height:100%;display:block;image-rendering:crisp-edges;image-rendering:pixelated;touch-action:none}
 .ov{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
   background:rgba(9,6,15,.8);padding:10px 16px}
@@ -182,6 +194,8 @@ body.shake{animation:shake .4s ease}
   color:var(--fg);font:700 30px var(--font-hud);display:flex;align-items:center;justify-content:center;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
 .tbtn.on{background:var(--accent);color:#140a22}
+.tbtn.fire{display:none;font-size:28px;background:rgba(80,30,10,.88);border-color:#ff7a1a88}
+body.has-fire .tbtn.fire{display:flex}
 body.is-touch #scrAdv.active .touch{display:flex}
 body.is-touch #scrAdv.active{padding-bottom:110px}
 .adv-help{font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);text-align:center;margin-top:12px;letter-spacing:.03em}
@@ -215,6 +229,30 @@ body.is-touch .adv-help{display:none}
 .rv .rx{color:var(--fg-dim);margin-top:4px}
 .rv .rr{font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);margin-top:4px}
 .review-empty{color:var(--ok);font-family:var(--font-hud);text-align:center}
+/* pseudo + classement */
+.pseudo-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+.pseudo-row label{font-family:var(--font-hud);font-weight:600;color:var(--fg-dim)}
+.pseudo-row input{font:600 16px var(--font-hud);color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:10px 14px;width:220px;outline:none;text-align:center}
+.pseudo-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #b06bff33}
+.pseudo-row input.err{border-color:var(--crit);box-shadow:0 0 0 3px #ff2e6a33}
+.board{width:100%;max-width:520px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-align:left}
+.board-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.board-h h3{font-family:var(--font-hud);font-size:1rem;margin:0}
+.tabs{display:flex;gap:6px}
+.tab{font:600 12px var(--font-hud);cursor:pointer;color:var(--fg-dim);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.tab.on{color:#140a22;background:var(--accent);border-color:var(--accent)}
+.board ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-variant-numeric:tabular-nums}
+.board li{display:grid;grid-template-columns:32px 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;font-size:14px}
+.board li:nth-child(odd){background:#ffffff06}
+.board li .r{font-family:var(--font-hud);font-weight:700;color:var(--fg-faint)}
+.board li:nth-child(1) .r{color:#ffd23f} .board li:nth-child(2) .r{color:#cfd6e0} .board li:nth-child(3) .r{color:#e09a5b}
+.board li .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board li .s{font-family:var(--font-hud);font-weight:700}
+.board li.me{background:#2ef0a61a;outline:1px solid #2ef0a666}
+.board .empty{color:var(--fg-faint);font-size:13px;display:block;padding:8px}
+.board-src{font-family:var(--font-mono);font-size:10px;color:var(--fg-faint);margin-top:8px;letter-spacing:.03em}
+.rank-line{font-family:var(--font-hud);color:var(--ok);margin-bottom:8px;font-size:14px}
 .foot{font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);text-align:center;padding-top:14px;letter-spacing:.04em}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:95;opacity:0;
   font-family:var(--font-hud);font-size:14px;background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--ok);
@@ -239,6 +277,11 @@ body.is-touch .adv-help{display:none}
       <h1 class="bigtitle">CYBER<b>CRISE</b></h1>
       <p class="subtitle">Neutralise les menaces en répondant juste. Choisis ton terrain : le quiz arcade pour enchaîner les combos, ou l'aventure 2D pour collecter des cristaux de données à travers le SI de CampusCloud.</p>
       <div class="themes-row" id="themesRow"></div>
+      <div class="pseudo-row">
+        <label for="pseudo">Ton pseudo</label>
+        <input id="pseudo" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="ex. Firas_N2" aria-describedby="pseudoHelp">
+      </div>
+      <div class="board-src" id="pseudoHelp" style="margin-top:-10px">2 à 16 caractères (lettres, chiffres, espace, _ - .) · affiché dans le classement</div>
       <div class="mode-row">
         <div class="mode-card">
           <button class="start-btn" id="quizBtn" type="button">▶ Mode Quiz</button>
@@ -246,10 +289,21 @@ body.is-touch .adv-help{display:none}
         </div>
         <div class="mode-card">
           <button class="start-btn alt" id="advBtn" type="button">◆ Mode Aventure</button>
-          <small>3 niveaux de plateforme · cristaux = QCM</small>
+          <small>3 niveaux · cristaux = QCM · pouvoirs, chrono RTO et secrets</small>
         </div>
       </div>
       <div class="best-line" id="bestLine"></div>
+      <section class="board" id="titleBoard" aria-labelledby="titleBoardH">
+        <div class="board-h">
+          <h3 id="titleBoardH">🏆 Classement</h3>
+          <div class="tabs" role="tablist">
+            <button class="tab on" type="button" role="tab" data-board="quiz">Quiz</button>
+            <button class="tab" type="button" role="tab" data-board="aventure">Aventure</button>
+          </div>
+        </div>
+        <ol id="boardList"></ol>
+        <div class="board-src" id="boardSrc"></div>
+      </section>
       <div class="title-meta">
         <span class="chip" id="themesChip">0 domaines</span>
         <span class="chip" id="qCountChip">0 questions</span>
@@ -269,6 +323,7 @@ body.is-touch .adv-help{display:none}
         <span class="hud-stat" id="qProgress"></span>
       </div>
       <div class="hud-right">
+        <button class="menu-btn icon-btn mute-btn" type="button">🔊</button>
         <button class="menu-btn" type="button" data-menu>✕ Menu</button>
         <div class="scorebox"><div class="s" id="score">0</div><div class="l">Score</div></div>
       </div>
@@ -294,16 +349,22 @@ body.is-touch .adv-help{display:none}
         <div class="lives" id="advLives" aria-label="Vies"></div>
         <span class="wave-tag" id="advTag">—</span>
         <span class="crystal-count" id="advCrystals">◆ 0/0</span>
+        <span class="time" id="advTime" aria-label="Chrono RTO"></span>
+        <span class="coin-count" id="advCoins" aria-label="Octets">● 0</span>
+        <span class="key-count" id="advKeys" style="display:none"></span>
         <span class="combo" id="advCombo">x1</span>
+        <span class="power" id="advPower" style="display:none"></span>
       </div>
       <div class="hud-right">
+        <button class="menu-btn icon-btn mute-btn" type="button">🔊</button>
+        <button class="menu-btn icon-btn" type="button" id="advFsBtn" aria-label="Plein écran">⛶</button>
         <button class="menu-btn" type="button" id="advPauseBtn">❚❚ Pause</button>
         <button class="menu-btn" type="button" data-menu>✕ Menu</button>
         <div class="scorebox"><div class="s" id="advScore">0</div><div class="l">Score</div></div>
       </div>
     </div>
     <div class="adv-wrap" id="advWrap">
-      <canvas id="adv" width="384" height="216" aria-label="Zone de jeu : plateformes, cristaux de données et ennemis"></canvas>
+      <canvas id="adv" width="320" height="180" aria-label="Zone de jeu : plateformes, cristaux de données et ennemis"></canvas>
       <div class="advmsg" id="advMsg"></div>
       <div class="ov" id="ov" role="dialog" aria-live="polite">
         <div class="k" id="ovK"></div>
@@ -316,10 +377,10 @@ body.is-touch .adv-help{display:none}
         </div>
       </div>
     </div>
-    <div class="adv-help">← → / Q D / A D : bouger · ↑ Z W Espace : sauter (appui long = saut haut) · Échap : pause · saute sur les ennemis bleus</div>
+    <div class="adv-help">← → / Q D / A D : bouger · ↑ Z W Espace : sauter (appui long = saut haut) · F / X : boule de feu (avec le pare-feu) · Échap : pause</div>
     <div class="touch" aria-label="Contrôles tactiles">
       <div class="grp"><button class="tbtn" id="tcLeft" type="button" aria-label="Gauche">◀</button><button class="tbtn" id="tcRight" type="button" aria-label="Droite">▶</button></div>
-      <div class="grp"><button class="tbtn" id="tcJump" type="button" aria-label="Sauter">▲</button></div>
+      <div class="grp"><button class="tbtn fire" id="tcFire" type="button" aria-label="Boule de feu">🔥</button><button class="tbtn" id="tcJump" type="button" aria-label="Sauter">▲</button></div>
     </div>
   </section>
 
@@ -340,6 +401,12 @@ body.is-touch .adv-help{display:none}
         <button class="btn2 ghost" id="shareBtn" type="button">⤴ Partager mon score</button>
         <button class="btn2 ghost" type="button" data-menu>⌂ Menu</button>
       </div>
+      <section class="board" id="resBoard" aria-labelledby="resBoardH">
+        <div class="board-h"><h3 id="resBoardH">🏆 Classement</h3></div>
+        <div class="rank-line" id="resRank"></div>
+        <ol id="resBoardList"></ol>
+        <div class="board-src" id="resBoardSrc"></div>
+      </section>
       <section class="review" id="review" aria-labelledby="reviewTitle">
         <div class="review-h">
           <h3 id="reviewTitle">Révision des erreurs</h3>
@@ -665,6 +732,7 @@ function recordMiss(theme, q, given){
 }
 function newRun(mode){
   run.mode=mode; run.score=0; run.combo=0; run.bestCombo=0; run.asked=0; run.correct=0; run.missed=[];
+  run.coins=0; run.keys=0; run.secret=false; run.practice=false;   // practice = « rejouer mes erreurs » (hors classement)
   run.maxLives = mode===STATE.ADVENTURE ? 5 : 3; run.lives=run.maxLives; run.levelsDone=0; run.won=false;
   run.levelsTotal = mode===STATE.ADVENTURE ? LEVELS.length : 0;
 }
@@ -678,7 +746,7 @@ function go(next){
   Object.keys(SCREEN_OF).forEach(function(k){ $(SCREEN_OF[k]).classList.toggle("active", k===next); });
   document.body.setAttribute("data-state", next);
   window.scrollTo(0,0);
-  if(next===STATE.TITLE){ setTheme("#b06bff"); refreshBestLine(); }
+  if(next===STATE.TITLE){ setTheme("#b06bff"); refreshBestLine(); if(typeof refreshTitleBoard==="function") refreshTitleBoard(); }
 }
 
 // ---------- écran titre ----------
@@ -804,7 +872,7 @@ function buildQueue(custom){
 }
 
 function startQuiz(custom){
-  newRun(STATE.QUIZ); buildQueue(custom); qi=0;
+  newRun(STATE.QUIZ); run.practice=!!custom; buildQueue(custom); qi=0;
   $("score").textContent="0"; renderLives("lives", run.lives, run.maxLives); updateCombo();
   go(STATE.QUIZ); loadQuestion();
 }
@@ -852,7 +920,7 @@ function answer(correct, btn, item){
   revealAnswers($("answers"), item.q, item._order);
   var ex=$("explain"), v=$("exVerdict"), tx=$("exText");
   if(correct){
-    btn.classList.remove("dim"); btn.classList.add("correct");
+    btn.classList.remove("dim"); btn.classList.add("correct"); Sfx.good();
     run.combo++; if(run.combo>run.bestCombo)run.bestCombo=run.combo; run.correct++;
     var mult=Math.min(5,run.combo); var speedBonus=Math.round(timeLeft/(TQ*1000)*50);
     var pts=(100+speedBonus)*mult;
@@ -864,7 +932,7 @@ function answer(correct, btn, item){
   } else {
     btn.classList.remove("dim"); btn.classList.add("wrong");
     run.combo=0; run.lives--; renderLives("lives", run.lives, run.maxLives); shakeBody();
-    recordMiss(item.theme, item.q, btn.lastChild.textContent);
+    recordMiss(item.theme, item.q, btn.lastChild.textContent); Sfx.bad();
     ex.className="explain bad show"; v.textContent="Raté —"; tx.textContent=item.q.e;
   }
   updateCombo(); showNext();
@@ -873,7 +941,7 @@ function quizTimeout(){
   if(answered) return; answered=true; run.asked++;
   var item=queue[qi]; revealAnswers($("answers"), item.q, item._order);
   run.combo=0; run.lives--; renderLives("lives", run.lives, run.maxLives); updateCombo(); shakeBody();
-  recordMiss(item.theme, item.q, null);
+  recordMiss(item.theme, item.q, null); Sfx.bad();
   $("explain").className="explain bad show";
   $("exVerdict").textContent="Trop tard —"; $("exText").textContent=item.q.e; showNext();
 }
@@ -892,6 +960,7 @@ function updateCombo(){ var c=$("combo"); c.textContent="x"+Math.min(5,Math.max(
 //      • donne à un sprite sa propre image :  { src:"mon_perso.png", fb:"#fff" }
 //    Si une image manque, un placeholder coloré (fb + shape) est dessiné : le jeu ne plante jamais.
 //    i = index dans la feuille (ligne par ligne) ; tableau = variantes / frames d'animation.
+//    Un sprite sans sheet ni src (ex. fireItem) est toujours dessiné en placeholder : remplaçable par un PNG.
 // ======================================================================
 var ASSETS = {
   base: "assets/",
@@ -909,6 +978,7 @@ var ASSETS = {
     spikes:   { sheet:"tiles", i:68,        fb:"#cfd6e0", shape:"tri" },
     crystal:  { sheet:"tiles", i:67,        fb:"#4cc9ff", shape:"diamond" },
     spring:   { sheet:"tiles", i:107,       fb:"#ff5a5a", shape:"rect" },
+    springUp: { sheet:"tiles", i:108,       fb:"#ff5a5a", shape:"rect" },
     flagTop:  { sheet:"tiles", i:[111,112], fb:"#ff2e6a", shape:"tri" },
     flagPole: { sheet:"tiles", i:131,       fb:"#cfd6e0", shape:"rect" },
     pine:     { sheet:"tiles", i:126,       fb:"#2f9e63", shape:"tri" },
@@ -916,6 +986,14 @@ var ASSETS = {
     mushroom: { sheet:"tiles", i:128,       fb:"#e0503c", shape:"circle" },
     sign:     { sheet:"tiles", i:85,        fb:"#b57a45", shape:"rect" },
     cactus:   { sheet:"tiles", i:127,       fb:"#3fa655", shape:"rect" },
+    // --- bonus ---
+    qblock:   { sheet:"tiles", i:10,        fb:"#f2b630", shape:"rect" },     // bloc « ! » à frapper par-dessous
+    usedBlock:{ sheet:"tiles", i:29,        fb:"#a0623a", shape:"rect" },     // bloc vidé
+    coin:     { sheet:"tiles", i:[151,152], fb:"#ffd23f", shape:"circle" },   // octet à ramasser
+    key:      { sheet:"tiles", i:27,        fb:"#ffd23f", shape:"rect" },     // clé de déchiffrement (secret)
+    heart:    { sheet:"tiles", i:44,        fb:"#ff4d6d", shape:"circle" },   // +1 vie
+    fireItem: { fb:"#ff7a1a", shape:"circle", w:12, h:12 },                   // pouvoir « Pare-feu »
+    shieldItem:{ fb:"#4cc9ff", shape:"diamond", w:12, h:12 },                 // pouvoir « Bouclier PCA »
     // --- personnages (feuille "chars") ---
     playerIdle: { sheet:"chars", i:0,       fb:"#4cd27a", shape:"circle" },
     playerWalk: { sheet:"chars", i:[0,1],   fb:"#4cd27a", shape:"circle" },
@@ -971,66 +1049,112 @@ function drawSprite(c, name, dx, dy, variant, flip){
 }
 
 // ======================================================================
+// 6 bis. SONS — bruitages synthétisés en WebAudio (aucun fichier à charger)
+//    Bouton 🔊/🔇 dans les HUD ; préférence mémorisée dans le navigateur.
+// ======================================================================
+var Sfx = (function(){
+  var ac=null, KEY="cybercrise_mute_v1", muted=false;
+  try{ muted = localStorage.getItem(KEY)==="1"; }catch(e){}
+  function ctx(){
+    if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } }
+    if(ac.state==="suspended") ac.resume();
+    return ac;
+  }
+  function tone(f, dur, type, vol, slideTo, delay){
+    if(muted) return; var a=ctx(); if(!a) return;
+    var t0=a.currentTime+(delay||0), o=a.createOscillator(), g=a.createGain();
+    o.type=type||"square"; o.frequency.setValueAtTime(f,t0);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t0+dur);
+    g.gain.setValueAtTime(vol||.05,t0); g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0+dur+.02);
+  }
+  function seq(notes, step, type, vol){ notes.forEach(function(n,i){ tone(n, step*1.5, type, vol, 0, i*step); }); }
+  var api = {
+    jump:   function(){ tone(300,.16,"square",.035,620); },
+    coin:   function(){ tone(988,.06,"square",.04); tone(1319,.14,"square",.04,0,.06); },
+    bump:   function(){ tone(140,.08,"triangle",.08,90); },
+    power:  function(){ seq([523,659,784,1047,1319],.06,"square",.04); },
+    fire:   function(){ tone(900,.1,"sawtooth",.03,250); },
+    stomp:  function(){ tone(420,.1,"square",.05,120); },
+    hurt:   function(){ tone(260,.3,"sawtooth",.05,70); },
+    spring: function(){ tone(200,.25,"triangle",.07,900); },
+    key:    function(){ seq([784,988,1175,1568],.08,"triangle",.06); },
+    life:   function(){ seq([659,784,1319,1047,1175,1568],.07,"square",.035); },
+    good:   function(){ seq([659,988],.08,"square",.04); },
+    bad:    function(){ seq([311,233],.12,"sawtooth",.04); },
+    tick:   function(){ tone(1400,.04,"square",.03); },
+    alarm:  function(){ seq([880,660,880,660],.12,"square",.03); },
+    clear:  function(){ seq([523,659,784,1047,784,1047,1319],.09,"square",.04); },
+    isMuted:function(){ return muted; },
+    toggle: function(){ muted=!muted; try{ localStorage.setItem(KEY, muted?"1":"0"); }catch(e){} api.label(); if(!muted) api.coin(); },
+    label:  function(){ Array.prototype.forEach.call(document.querySelectorAll(".mute-btn"), function(b){
+              b.textContent = muted ? "🔇" : "🔊"; b.setAttribute("aria-label", muted ? "Activer le son" : "Couper le son"); }); }
+  };
+  return api;
+})();
+
+// ======================================================================
 // 7. NIVEAUX — format texte, 1 caractère = 1 tuile de 18 px (12 lignes)
 //    .  vide        #  sol (herbe auto)   =  plateforme      ^  piques (danger)
 //    P  départ      X  sortie (drapeau)   C  cristal de données (→ QCM)
 //    E  ennemi qui patrouille (saute dessus pour l'écraser)
-//    Z  ennemi à pointes (impossible à écraser : évite-le)
-//    B  chauve-souris volante   H  ressort
+//    Z  ennemi à pointes (impossible à écraser : évite-le… ou grille-le au pare-feu)
+//    B  chauve-souris volante   H  ressort (maintiens SAUT pour aller très haut)
+//    ?  bloc bonus : frappe-le par-dessous → Pare-feu (ou Bouclier PCA si tu l'as déjà)
+//    u  bloc INVISIBLE (secret) → cœur +1 vie       o  octet (pièce, 30 = +1 vie)
+//    K  clé de déchiffrement (secret : réunis les 3 !)
 //    décor : t pin · g pousse · m champignon · w panneau · k cactus
 //    themes = domaines du cours dont les cristaux tirent leurs QCM.
+//    time = chrono du niveau en secondes (« RTO ») ; wave = front de ransomware qui avance.
 // ======================================================================
 var LEVELS = [
   {
-    id:"dc", name:"Datacenter VMware", sub:"Gouvernance, maintenance, disponibilité & cas CampusCloud",
-    themes:["gouv","maint","dispo","cas"], sky:["#1a0e3a","#3a1570"], accent:"#b06bff",
+    id:"dc", name:"Datacenter VMware", sub:"Gouvernance, maintenance, disponibilité & cas CampusCloud", themes:["gouv","maint","dispo","cas"], sky:["#1a0e3a","#3a1570"], accent:"#b06bff", time:140, hint:"Frappe le bloc « ! » par-dessous · saute sur les ennemis bleus · des secrets se cachent en hauteur…",
     map:[
       "........................................................................",
       "........................................................................",
+      "............................................K...........................",
       "........................................................................",
       "........................................................................",
-      "........................................................................",
-      ".........................................C..............................",
-      "........................................===.............................",
-      "......................C...................................C.............",
-      ".....................====...........===..................====...........",
-      "..P..t..g..Ew..............^^.E...............C.....m.E........Z..C..X..",
+      "..............................B..........C..............................",
+      "............?................u..........===.......................ooo...",
+      "................oo...oC.o.......oo..............oo........C.............",
+      "...............o..o..====...........===..................====...........",
+      "..P..t..g..Ew..............^^.E.......E....wH.C.....m.E........Z..C..X..",
       "################..##############..##############..######################",
       "################..##############..##############..######################"
     ]
   },
   {
-    id:"cloud", name:"Cloud Azure", sub:"Reprise, PCA/PRA, sauvegardes & documentation",
-    themes:["bia","pcapra","backup","doc"], sky:["#0a2433","#13597a"], accent:"#36c7d6",
+    id:"cloud", name:"Cloud Azure", sub:"Reprise, PCA/PRA, sauvegardes & documentation", themes:["bia","pcapra","backup","doc"], sky:["#0a2433","#13597a"], accent:"#36c7d6", time:170, hint:"Les octets (pièces) donnent une vie tous les 30 · maintiens SAUT sur un ressort pour aller très haut",
     map:[
       "........................................................................................",
       "........................................................................................",
-      "........................................................................................",
+      "........................................................K...............................",
       "............................................B...........................................",
-      "........................................................................................",
-      ".......................C.....................................................C..........",
-      "...........................===.............C............................................",
-      "......................===.......====....=======...........C.................===.........",
-      ".................===.....................................===...........===..............",
-      "..P..t......===.........................E.^^^....k...........Z....===..............E.CX.",
+      "..................................u...................................B.................",
+      ".......................C....o................................................C..........",
+      "........?..............o...===...oo........C............................o...o.o.........",
+      "..................o...===.......====....=======...........C.................===.........",
+      ".............o...===.................................oo..===...........===..............",
+      "..P..t......===.........................E.^^^E...k......H....Z....===..............E.CX.",
       "##########............................###############..#########.................#######",
       "##########............................###############..#########.................#######"
     ]
   },
   {
-    id:"crise", name:"Salle de crise", sub:"Incident, changement, supervision & NIST CSF",
-    themes:["incident","cab","supervision","cyber"], sky:["#2a0a1e","#5a1240"], accent:"#ff2e6a",
+    id:"crise", name:"Salle de crise", sub:"Incident, changement, supervision & NIST CSF", themes:["incident","cab","supervision","cyber"], sky:["#2a0a1e","#5a1240"], accent:"#ff2e6a", time:190, hint:"Le ransomware avance depuis la gauche : chaque bonne réponse le fait reculer · le pare-feu grille même les ennemis à pointes", wave:{"speed":12,"delay":5},
     map:[
       "................................................................................................",
       "................................................................................................",
-      "................................................................................................",
-      "....................................B......C....................................................",
-      "................................................................................................",
+      "....................................................K...........................................",
+      "....................................B......C................B...................................",
+      "......................................o.........................................................",
       "......................................C...===...................................................",
-      "................C.................................................C..........C..................",
-      ".....................................===.......===..............................................",
-      "..............####...............................................####.......===.................",
-      "..P...g.......####...E.^^.Z.....===...................E.^.Z.C....####...E.^............E.....X..",
+      ".........?......C..............................oo.................C.....?....C.............u....",
+      "..............................oo.....===.......===................................o.............",
+      "..............####...............................................####.......===..o.o............",
+      "..P...g.......####...E.^^.Z.....===...............w.H.E.^.Z.C....####...E.^............E.....X..",
       "#############.####.##########......................#############.################...############",
       "#############.####.##########......................#############.################...############"
     ]
@@ -1049,31 +1173,34 @@ Pool.next = function(themeIds){
   var p=c[Math.floor(Math.random()*c.length)]; Pool.used.push(p.q); return p;
 };
 
+var rootMode = false;              // easter egg : code Konami → pare-feu permanent
+
 var Adv = (function(){
-  var T=18, VW=384, VH=216, FIXED=1/120;                       // tuile, vue logique, pas physique
-  var VW_WIDE=384, VW_PORTRAIT=240;                             // en portrait, vue plus étroite = zoom ×1,6
+  var T=18, VW=320, VH=180, FIXED=1/120;                        // tuile, vue logique (zoom), pas physique
+  var VW_WIDE=320, VW_PORTRAIT=200;                             // en portrait : vue plus étroite = sprites plus grands
   var GRAV=1500, JUMP=440, MAXV=118, ACC=1100, FRIC=1300, FRIC_AIR=420, MAXFALL=540;
-  var COYOTE=0.1, JBUF=0.12, SPRING=640;
+  var COYOTE=0.1, JBUF=0.12, SPRING=640, SHIELD_TIME=10, COINS_FOR_LIFE=30, MAX_LIVES=9;
   var cv=$("adv"), ctx=cv.getContext("2d");
+  var L=null, P=null, levelIdx=0, phase="IDLE", running=false, raf=0, ovShownAt=0, last=0, acc=0, animT=0, camX=0, camY=0;
+  var parts=[], pops=[], items=[], shots=[], bumps=[], curCrystal=null, msgT=0, shakeT=0, ovAction1=null, ovAction2=null, skyGrad=null;
+  var shotCd=0, lastSec=-1, warned=false;
+  var keys={}, touch={left:false,right:false,jump:false};
+  var input={left:false,right:false,jump:false};
 
   // ---------- vue adaptée à l'écran ----------
-  // Sur téléphone en portrait, une vue 384×216 (16:9) n'occupe qu'une fine bande de l'écran.
-  // On réduit la largeur logique : le canvas garde toute la largeur et gagne en hauteur.
+  // La vue logique (320×180) est agrandie au maximum par le CSS ; en portrait on la rétrécit
+  // en largeur (200×180) pour que les sprites restent grands sur téléphone.
   function fitView(){
     var portrait = innerHeight>innerWidth && innerWidth<760;
     var nv = portrait ? VW_PORTRAIT : VW_WIDE;
-    if(nv===VW && cv.width===nv) return;
+    if(nv===VW && cv.width===nv && cv.height===VH) return;
     VW=nv; cv.width=VW; cv.height=VH;
-    $("advWrap").style.aspectRatio = VW+" / "+VH;
+    $("advWrap").style.setProperty("--ar", (VW/VH).toFixed(4));
     if(L && P) snapCamera();
   }
   addEventListener("resize", fitView);
   addEventListener("orientationchange", fitView);
   fitView();
-  var L=null, P=null, levelIdx=0, phase="IDLE", running=false, raf=0, ovShownAt=0, last=0, acc=0, animT=0, camX=0, camY=0;
-  var parts=[], pops=[], curCrystal=null, msgT=0, shakeT=0, ovAction1=null, ovAction2=null, skyGrad=null;
-  var keys={}, touch={left:false,right:false,jump:false};
-  var input={left:false,right:false,jump:false};
 
   // ---------- overlay générique (intro / pause / fin de niveau) ----------
   function showOv(k,t,d,h,b1,f1,b2,f2){
@@ -1086,20 +1213,31 @@ var Adv = (function(){
   function ovReady(){ return performance.now()-ovShownAt>350; }   // évite qu'un même appui active deux overlays d'affilée
   $("ovB1").addEventListener("click", function(){ if(ovAction1 && ovReady()) ovAction1(); });
   $("ovB2").addEventListener("click", function(){ if(ovAction2 && ovReady()) ovAction2(); });
-  function say(msg){ var m=$("advMsg"); m.textContent=msg; m.classList.add("show"); msgT=2.2; }
+  function say(msg, dur){ var m=$("advMsg"); m.textContent=msg; m.classList.add("show"); msgT=dur||2.2; }
 
   function hud(){
-    renderLives("advLives", run.lives, run.maxLives);
+    renderLives("advLives", run.lives, Math.max(run.maxLives, run.lives));
     $("advCrystals").textContent="◆ "+(L?collected():0)+"/"+(L?L.total:0);
+    $("advCoins").textContent="● "+run.coins;
+    var k=$("advKeys"); k.textContent = run.keys ? "🔑 "+run.keys+"/"+LEVELS.length : ""; k.style.display = run.keys ? "" : "none";
+    var pw=[]; if(P&&P.fire) pw.push("🔥 Pare-feu"); if(P&&P.shield>0) pw.push("🛡 PCA "+Math.ceil(P.shield)+" s");
+    var pe=$("advPower"); pe.textContent=pw.join(" · "); pe.style.display = pw.length ? "" : "none";
+    document.body.classList.toggle("has-fire", !!(P&&P.fire));
     var c=$("advCombo"); c.textContent="x"+Math.min(5,Math.max(1,run.combo||1)); c.classList.toggle("on", run.combo>=2);
     if(run.combo>=2&&!prefersReduced){ c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); }
+    hudTime();
+  }
+  function hudTime(){
+    var t=$("advTime"); if(!L){ t.textContent=""; return; }
+    var s=Math.max(0,Math.ceil(L.time)); t.textContent="⏱ "+s;
+    t.classList.toggle("low", s<=30);
   }
   function collected(){ var n=0; for(var i=0;i<L.crystals.length;i++) if(L.crystals[i].taken) n++; return n; }
 
   // ---------- cycle de vie ----------
   function start(){
     newRun(STATE.ADVENTURE); Pool.reset(); levelIdx=0; fitView();
-    $("advScore").textContent="0"; L=null; hud();
+    $("advScore").textContent="0"; L=null; P=null; hud();
     go(STATE.ADVENTURE);
     phase="LOAD";
     showOv("Chargement","Préparation des sprites…","","","…",null);
@@ -1110,29 +1248,36 @@ var Adv = (function(){
   function begin(){
     if(running) return; running=true; last=performance.now(); acc=0; raf=requestAnimationFrame(frame);
   }
-  function stop(){ running=false; cancelAnimationFrame(raf); phase="IDLE"; hideOv(); closeModal(); releaseAll(); }
+  function stop(){ running=false; cancelAnimationFrame(raf); phase="IDLE"; hideOv(); closeModal(); releaseAll(); document.body.classList.remove("has-fire"); }
 
   function loadLevel(i){
+    var keepFire = P ? P.fire : false;                          // le pare-feu se conserve d'un niveau à l'autre
     levelIdx=i; L=buildLevel(LEVELS[i]);
     setTheme(L.def.accent);
     skyGrad=ctx.createLinearGradient(0,0,0,VH); skyGrad.addColorStop(0,L.def.sky[0]); skyGrad.addColorStop(1,L.def.sky[1]);
-    parts=[]; pops=[]; resetPlayer(); snapCamera();
+    parts=[]; pops=[]; items=[]; shots=[]; bumps=[]; lastSec=-1; warned=false;
+    resetPlayer(); P.fire = keepFire || rootMode; snapCamera();
     $("advTag").textContent="Niv "+(i+1)+"/"+LEVELS.length+" · "+L.def.name; hud();
     phase="INTRO";
-    showOv("NIVEAU "+(i+1)+" / "+LEVELS.length, L.def.name, L.def.sub+" — collecte les "+L.total+" cristaux de données (chacun déclenche un QCM), puis rejoins le drapeau.",
-      "Évite les piques et les ennemis à pointes · saute sur les ennemis bleus", "▶ Jouer", function(){ hideOv(); phase="PLAY"; last=performance.now(); });
+    showOv("NIVEAU "+(i+1)+" / "+LEVELS.length, L.def.name,
+      L.def.sub+" — valide les "+L.total+" cristaux (un QCM chacun) et rejoins le drapeau avant la fin du chrono RTO ("+L.def.time+" s).",
+      L.def.hint, "▶ Jouer", function(){ hideOv(); phase="PLAY"; last=performance.now();
+        if(L.wave) say("⚠ Un ransomware chiffre le SI depuis la gauche : avance !", 3.2); });
   }
 
   // ---------- construction d'un niveau depuis ses lignes de texte ----------
   function buildLevel(def){
     var rows=def.map, H=rows.length, W=rows[0].length;
-    var lv={def:def, W:W, H:H, grid:[], crystals:[], enemies:[], decor:[], startTx:1, startTy:1, exit:null, total:0};
+    var lv={def:def, W:W, H:H, grid:[], crystals:[], enemies:[], decor:[], coins:[], keys:[], startTx:1, startTy:1, exit:null, total:0,
+            time:def.time||180, wave: def.wave ? {x:-80, speed:def.wave.speed, delay:def.wave.delay} : null};
     for(var y=0;y<H;y++){ lv.grid[y]=rows[y].split(""); }
     for(y=0;y<H;y++) for(var x=0;x<W;x++){
       var ch=lv.grid[y][x], clear=true;
       if(ch==="P"){ lv.startTx=x; lv.startTy=y; }
       else if(ch==="X"){ lv.exit={tx:x,ty:y}; }
       else if(ch==="C"){ lv.crystals.push({tx:x,ty:y,x:x*T,y:y*T,taken:false,cd:0}); }
+      else if(ch==="o"){ lv.coins.push({x:x*T+4,y:y*T+4,w:10,h:10,taken:false}); }
+      else if(ch==="K"){ lv.keys.push({x:x*T+2,y:y*T+2,w:14,h:14,taken:false}); }
       else if(ch==="E"){ lv.enemies.push({type:"E",x:x*T+2,y:(y+1)*T-12,w:14,h:12,dir:-1,speed:28,alive:true,dead:0,stomp:true}); }
       else if(ch==="Z"){ lv.enemies.push({type:"Z",x:x*T+2,y:(y+1)*T-16,w:14,h:16,dir:1,speed:22,alive:true,dead:0,stomp:false}); }
       else if(ch==="B"){ lv.enemies.push({type:"B",x:x*T+2,y:y*T,y0:y*T,x0:x*T+2,w:14,h:12,dir:1,speed:34,alive:true,dead:0,stomp:true,ph:Math.random()*6}); }
@@ -1143,13 +1288,15 @@ var Adv = (function(){
     lv.total=lv.crystals.length;
     return lv;
   }
+  // « ? » et « b » (bloc vidé) sont solides ; « u » (invisible) ne l'est que frappé par-dessous.
   function solidAt(tx,ty){
     if(tx<0||tx>=L.W) return true;        // murs invisibles aux bords
     if(ty<0||ty>=L.H) return false;       // le vide : trous = chute
-    var c=L.grid[ty][tx]; return c==="#"||c==="=";
+    var c=L.grid[ty][tx]; return c==="#"||c==="="||c==="?"||c==="b";
   }
   function resetPlayer(){
-    P={x:L.startTx*T+3, y:L.startTy*T, w:12, h:18, vx:0, vy:0, onGround:false, face:1, coyote:0, jumpBuf:0, inv:0, stun:0, safeX:L.startTx*T+3, safeY:L.startTy*T, safeT:0};
+    P={x:L.startTx*T+3, y:L.startTy*T, w:12, h:18, vx:0, vy:0, onGround:false, face:1, coyote:0, jumpBuf:0, inv:0, stun:0,
+       safeX:L.startTx*T+3, safeY:L.startTy*T, safeT:0, fire:false, shield:0, spring:0};
   }
 
   // ---------- entrées clavier + tactile ----------
@@ -1158,24 +1305,28 @@ var Adv = (function(){
     input.right = !!(keys.arrowright||keys.d) || touch.right;
     input.jump  = !!(keys.arrowup||keys.w||keys.z||keys[" "]) || touch.jump;
   }
-  function releaseAll(){ keys={}; touch.left=touch.right=touch.jump=false; ["tcLeft","tcRight","tcJump"].forEach(function(id){ $(id).classList.remove("on"); }); recompute(); }
+  function releaseAll(){ keys={}; touch.left=touch.right=touch.jump=false; ["tcLeft","tcRight","tcJump","tcFire"].forEach(function(id){ $(id).classList.remove("on"); }); recompute(); }
   function pressJump(){ if(P) P.jumpBuf=JBUF; }
+  var FIRE_KEYS={f:1,x:1,k:1,shift:1};
   function onKey(e, down){
     var k=(e.key||"").toLowerCase();
     if(["arrowleft","arrowright","arrowup","arrowdown"," "].indexOf(k)>=0 && state===STATE.ADVENTURE) e.preventDefault();
+    if(down && !e.repeat && FIRE_KEYS[k] && phase==="PLAY"){ shoot(); return; }
     var wasJump=input.jump;
     keys[k]=down; recompute();
     if(down && !e.repeat && input.jump && !wasJump && phase==="PLAY") pressJump();
   }
   function bindTouch(id, name){
     var el=$(id);
-    function on(e){ e.preventDefault(); touch[name]=true; el.classList.add("on"); recompute(); if(name==="jump"&&phase==="PLAY") pressJump(); }
-    function off(e){ e.preventDefault(); touch[name]=false; el.classList.remove("on"); recompute(); }
+    function on(e){ e.preventDefault(); el.classList.add("on");
+      if(name==="fire"){ if(phase==="PLAY") shoot(); return; }
+      touch[name]=true; recompute(); if(name==="jump"&&phase==="PLAY") pressJump(); }
+    function off(e){ e.preventDefault(); el.classList.remove("on"); if(name==="fire") return; touch[name]=false; recompute(); }
     el.addEventListener("pointerdown", on);
     ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ el.addEventListener(ev, off); });
     el.addEventListener("contextmenu", function(e){ e.preventDefault(); });
   }
-  bindTouch("tcLeft","left"); bindTouch("tcRight","right"); bindTouch("tcJump","jump");
+  bindTouch("tcLeft","left"); bindTouch("tcRight","right"); bindTouch("tcJump","jump"); bindTouch("tcFire","fire");
 
   // ---------- boucle : requestAnimationFrame + delta-time, physique à pas fixe ----------
   function frame(ts){
@@ -1190,9 +1341,23 @@ var Adv = (function(){
   }
 
   function step(h){
-    var p=P;
-    p.inv=Math.max(0,p.inv-h); p.stun=Math.max(0,p.stun-h); p.coyote-=h; p.jumpBuf-=h;
-    for(var i=0;i<L.crystals.length;i++) L.crystals[i].cd=Math.max(0,L.crystals[i].cd-h);
+    var p=P, i;
+    p.inv=Math.max(0,p.inv-h); p.stun=Math.max(0,p.stun-h); p.coyote-=h; p.jumpBuf-=h; shotCd-=h; p.spring=Math.max(0,p.spring-h);
+    for(i=0;i<L.crystals.length;i++) L.crystals[i].cd=Math.max(0,L.crystals[i].cd-h);
+    if(p.shield>0){ var s0=Math.ceil(p.shield); p.shield=Math.max(0,p.shield-h); if(Math.ceil(p.shield)!==s0) hud(); if(p.shield===0) say("Bouclier PCA terminé"); }
+
+    // --- chrono RTO : suspense quand il reste peu de temps ---
+    L.time-=h;
+    var sec=Math.ceil(L.time);
+    if(sec!==lastSec){ lastSec=sec; hudTime();
+      if(sec===30 && !warned){ warned=true; say("⚠ RTO bientôt dépassé : 30 s !"); Sfx.alarm(); }
+      if(sec<=10 && sec>0) Sfx.tick(); }
+    if(L.time<=0){ L.time=60; warned=false; hurt("time"); if(phase!=="PLAY") return; say("RTO dépassé : −1 vie, +60 s pour finir"); }
+
+    // --- vague de ransomware : avance depuis la gauche ---
+    if(L.wave){ var w=L.wave;
+      if(w.delay>0) w.delay-=h; else w.x+=w.speed*h;
+      if(p.x < w.x){ hurt("wave"); if(phase!=="PLAY") return; } }
 
     // --- déplacement horizontal ---
     var dir = p.stun>0 ? 0 : (input.right?1:0)-(input.left?1:0);
@@ -1200,21 +1365,24 @@ var Adv = (function(){
     else if(p.stun<=0){ var f=(p.onGround?FRIC:FRIC_AIR)*h; p.vx = p.vx>0 ? Math.max(0,p.vx-f) : Math.min(0,p.vx+f); }
     // --- saut (coyote time + buffer), hauteur variable ---
     if(p.onGround) p.coyote=COYOTE;
-    if(p.jumpBuf>0 && p.coyote>0){ p.vy=-JUMP; p.jumpBuf=0; p.coyote=0; p.onGround=false; }
+    if(p.jumpBuf>0 && p.coyote>0){ p.vy=-JUMP; p.jumpBuf=0; p.coyote=0; p.onGround=false; Sfx.jump(); }
     var g = GRAV*((p.vy<0 && !input.jump)?2.2:1);
     p.vy=Math.min(MAXFALL, p.vy+g*h);
 
-    // --- collisions tilemap, axe par axe ---
+    // --- collisions tilemap, axe par axe (+ blocs frappés par-dessous) ---
     p.x+=p.vx*h; collideX(p);
     p.onGround=false;
-    p.y+=p.vy*h; collideY(p);
+    p.y+=p.vy*h;
+    if(p.vy<0) headBump(p);
+    collideY(p);
 
     // dernière position sûre (respawn après un piège ou un trou)
     p.safeT-=h;
     if(p.onGround && p.safeT<=0){
       var tx=Math.floor((p.x+p.w/2)/T), ty=Math.floor((p.y+p.h-1)/T);
       if(solidAt(Math.floor(p.x/T),ty+1) && solidAt(Math.floor((p.x+p.w-1)/T),ty+1) &&
-         L.grid[ty][tx-1]!=="^" && L.grid[ty][tx]!=="^" && L.grid[ty][tx+1]!=="^"){ p.safeX=p.x; p.safeY=p.y; p.safeT=0.2; }
+         L.grid[ty][tx-1]!=="^" && L.grid[ty][tx]!=="^" && L.grid[ty][tx+1]!=="^" &&
+         (!L.wave || p.x > L.wave.x+40)){ p.safeX=p.x; p.safeY=p.y; p.safeT=0.2; }
     }
 
     // --- ressorts, piques ---
@@ -1222,11 +1390,21 @@ var Adv = (function(){
     for(var ty2=y0;ty2<=y1;ty2++) for(var tx2=x0;tx2<=x1;tx2++){
       if(ty2<0||ty2>=L.H) continue;
       var c=L.grid[ty2][tx2];
-      if(c==="H" && p.vy>=0){ p.vy=-SPRING; p.onGround=false; spark(tx2*T+9, ty2*T+9, "#ff8a8a", 6); }
-      else if(c==="^" && p.y+p.h > ty2*T+9 && p.x+p.w-2 > tx2*T+2 && p.x+2 < tx2*T+T-2){ hurt("spike"); }
+      if(c==="H" && p.vy>=0){ p.vy=-SPRING; p.onGround=false; p.spring=0.25; spark(tx2*T+9, ty2*T+9, "#ff8a8a", 6); Sfx.spring(); }
+      else if(c==="^" && p.shield<=0 && p.y+p.h > ty2*T+9 && p.x+p.w-2 > tx2*T+2 && p.x+2 < tx2*T+T-2){ hurt("spike"); if(phase!=="PLAY") return; }
     }
-    // --- ennemis ---
-    updateEnemies(h);
+    // --- ennemis, bonus, tirs ---
+    updateEnemies(h); if(phase!=="PLAY") return;
+    updateItems(h);
+    updateShots(h);
+    // --- octets (pièces) ---
+    for(i=0;i<L.coins.length;i++){ var co=L.coins[i]; if(co.taken) continue;
+      if(overlap(p,co)){ co.taken=true; run.coins++; run.score+=10; animScore("advScore", run.score); Sfx.coin(); spark(co.x+5,co.y+5,"#ffd23f",5);
+        if(run.coins%COINS_FOR_LIFE===0) gainLife("+1 vie : "+run.coins+" octets récupérés !"); else hud(); } }
+    // --- clés de déchiffrement (secret) ---
+    for(i=0;i<L.keys.length;i++){ var ky=L.keys[i]; if(ky.taken) continue;
+      if(overlap(p,ky)){ ky.taken=true; run.keys++; run.score+=500; animScore("advScore", run.score); Sfx.key(); spark(ky.x+7,ky.y+7,"#ffd23f",20);
+        pop(ky.x+7, ky.y-4, "+500"); say("🔑 Clé de déchiffrement "+run.keys+"/"+LEVELS.length+" trouvée !", 3); hud(); } }
     // --- cristaux ---
     for(i=0;i<L.crystals.length;i++){
       var cr=L.crystals[i]; if(cr.taken||cr.cd>0) continue;
@@ -1242,17 +1420,79 @@ var Adv = (function(){
     if(p.y>L.H*T+30){ hurt("pit"); }
   }
 
+  function overlap(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
   function collideX(p){
-    var x0=Math.floor(p.x/T), x1=Math.floor((p.x+p.w-1e-3)/T), y0=Math.floor(p.y/T), y1=Math.floor((p.y+p.h-1e-3)/T);
+    var hit=false, x0=Math.floor(p.x/T), x1=Math.floor((p.x+p.w-1e-3)/T), y0=Math.floor(p.y/T), y1=Math.floor((p.y+p.h-1e-3)/T);
     for(var ty=y0;ty<=y1;ty++) for(var tx=x0;tx<=x1;tx++) if(solidAt(tx,ty)){
-      if(p.vx>0) p.x=tx*T-p.w; else if(p.vx<0) p.x=(tx+1)*T; p.vx=0;
+      if(p.vx>0) p.x=tx*T-p.w; else if(p.vx<0) p.x=(tx+1)*T; p.vx=0; hit=true;
     }
+    return hit;
   }
   function collideY(p){
-    var x0=Math.floor(p.x/T), x1=Math.floor((p.x+p.w-1e-3)/T), y0=Math.floor(p.y/T), y1=Math.floor((p.y+p.h-1e-3)/T);
+    var hit=false, x0=Math.floor(p.x/T), x1=Math.floor((p.x+p.w-1e-3)/T), y0=Math.floor(p.y/T), y1=Math.floor((p.y+p.h-1e-3)/T);
     for(var ty=y0;ty<=y1;ty++) for(var tx=x0;tx<=x1;tx++) if(solidAt(tx,ty)){
-      if(p.vy>0){ p.y=ty*T-p.h; p.onGround=true; } else if(p.vy<0){ p.y=(ty+1)*T; } p.vy=0;
+      if(p.vy>0){ p.y=ty*T-p.h; p.onGround=true; } else if(p.vy<0){ p.y=(ty+1)*T; } p.vy=0; hit=true;
     }
+    return hit;
+  }
+
+  // ---------- blocs bonus frappés par-dessous ----------
+  function headBump(p){
+    var ty=Math.floor(p.y/T); if(ty<0||ty>=L.H) return;
+    var cx=Math.floor((p.x+p.w/2)/T), cand=[cx, Math.floor(p.x/T), Math.floor((p.x+p.w-1)/T)];
+    for(var i=0;i<cand.length;i++){ var tx=cand[i], c=L.grid[ty][tx];
+      if(c==="?"){ hitBlock(tx,ty, p.fire ? "shield" : "fire"); return; }
+      if(c==="u"){ hitBlock(tx,ty,"heart"); say("Bloc secret découvert !"); return; }
+      if(c==="b"){ Sfx.bump(); return; }
+    }
+  }
+  function hitBlock(tx,ty,kind){
+    L.grid[ty][tx]="b"; bumps.push({tx:tx,ty:ty,t:0.18}); Sfx.bump();
+    // l'ennemi posé sur le bloc est éjecté (comme dans les classiques)
+    L.enemies.forEach(function(e){ if(e.alive && e.x+e.w>tx*T && e.x<tx*T+T && Math.abs((e.y+e.h)-ty*T)<3) killEnemy(e,100); });
+    items.push({kind:kind, x:tx*T+3, y:ty*T-13, w:12, h:12, vx:(kind==="heart"?50:40)*(P.face||1), vy:-160, onGround:false});
+    setTimeout(function(){ if(state===STATE.ADVENTURE) Sfx.power(); }, 90);
+  }
+  function updateItems(h){
+    for(var i=items.length-1;i>=0;i--){ var it=items[i];
+      it.vy=Math.min(MAXFALL, it.vy+GRAV*.8*h);
+      var vx=it.vx; it.x+=it.vx*h; if(collideX(it)) it.vx=-vx;          // rebondit sur les murs
+      it.onGround=false; it.y+=it.vy*h; collideY(it);
+      if(it.y>L.H*T+40){ items.splice(i,1); continue; }
+      if(overlap(P,it)){ items.splice(i,1); grant(it.kind, it.x+6, it.y); }
+    }
+  }
+  function grant(kind, x, y){
+    if(kind==="fire"){ P.fire=true; say("🔥 Pare-feu activé : F / X (ou 🔥) pour tirer !", 3.2); }
+    else if(kind==="shield"){ P.shield=SHIELD_TIME; say("🛡 Bouclier PCA : invulnérable "+SHIELD_TIME+" s !", 2.6); }
+    else if(kind==="heart"){ gainLife("❤ Cœur secret : +1 vie !"); }
+    run.score+=200; animScore("advScore", run.score); pop(x, y-4, "+200"); spark(x, y+6, "#ffd23f", 14); Sfx.power(); hud();
+  }
+  function gainLife(msg){ if(run.lives<MAX_LIVES) run.lives++; Sfx.life(); say(msg, 2.6); hud(); }
+
+  // ---------- pare-feu : boules de feu ----------
+  function shoot(){
+    if(!P) return;
+    if(!P.fire){ if(msgT<=0.2) say("Frappe un bloc « ! » par-dessous pour obtenir le pare-feu"); return; }
+    if(shotCd>0 || shots.length>=3) return;
+    shotCd=0.22; Sfx.fire();
+    shots.push({x:P.x+(P.face>0?P.w:-6), y:P.y+5, w:6, h:6, vx:P.face*230, vy:40, life:1.6, onGround:false});
+  }
+  function updateShots(h){
+    for(var i=shots.length-1;i>=0;i--){ var s=shots[i]; s.life-=h;
+      s.vy=Math.min(400, s.vy+1100*h);
+      s.x+=s.vx*h; var wall=collideX(s);
+      var vyBefore=s.vy; s.y+=s.vy*h; collideY(s);
+      if(vyBefore>0 && s.vy===0) s.vy=-210;                              // rebondit au sol
+      var dead = wall || s.life<=0 || s.y>L.H*T+20;
+      for(var j=0;j<L.enemies.length && !dead;j++){ var e=L.enemies[j];
+        if(e.alive && overlap(s,e)){ killEnemy(e,100); dead=true; } }
+      if(dead){ spark(s.x+3,s.y+3,"#ff9a3c",6); shots.splice(i,1); }
+    }
+  }
+  function killEnemy(e, pts){
+    e.alive=false; e.dead=0; run.score+=pts; animScore("advScore", run.score);
+    pop(e.x+e.w/2, e.y-4, "+"+pts); spark(e.x+e.w/2, e.y+e.h/2, "#ffffff", 8); Sfx.stomp();
   }
 
   function updateEnemies(h){
@@ -1270,12 +1510,11 @@ var Adv = (function(){
         if(wall||ledge) e.dir*=-1; else e.x=nx;
       }
       // contact avec le joueur
-      if(p.x<e.x+e.w && p.x+p.w>e.x && p.y<e.y+e.h && p.y+p.h>e.y){
+      if(overlap(p,e)){
         var falling = p.vy>30 && (p.y+p.h)-e.y < 10;
-        if(e.stomp && falling){
-          e.alive=false; e.dead=0; p.vy = input.jump ? -340 : -230; run.score+=50; animScore("advScore", run.score);
-          pop(e.x+e.w/2, e.y-4, "+50"); spark(e.x+e.w/2, e.y+e.h/2, "#ffffff", 8);
-        } else if(p.inv<=0){ hurt("enemy"); }
+        if(p.shield>0){ killEnemy(e,100); }
+        else if(e.stomp && falling){ killEnemy(e,50); p.vy = input.jump ? -340 : -230; }
+        else if(p.inv<=0){ hurt("enemy"); if(phase!=="PLAY") return; }
       }
     }
   }
@@ -1283,11 +1522,19 @@ var Adv = (function(){
   // ---------- dégâts ----------
   function hurt(kind){
     if(phase!=="PLAY") return;
-    if(kind!=="pit" && P.inv>0) return;
-    run.lives--; run.combo=0; hud(); shakeT=0.3;
+    if(kind!=="pit" && kind!=="time" && (P.inv>0 || P.shield>0)){
+      if(kind==="wave" && L.wave) L.wave.x = Math.min(L.wave.x, P.x-30);   // le bouclier protège mais la vague reste au contact
+      return;
+    }
+    run.lives--; run.combo=0; shakeT=0.3; Sfx.hurt();
+    if(P.fire && !rootMode){ P.fire=false; say("Pare-feu perdu !"); }
+    hud();
     if(run.lives<=0){ gameOver(); return; }
     if(kind==="enemy"){ P.vy=-220; P.vx=-P.face*140; P.stun=0.25; P.inv=1.6; }
-    else { P.x=P.safeX; P.y=P.safeY; P.vx=0; P.vy=0; P.inv=1.6; snapCamera(); }
+    else if(kind==="wave"){ L.wave.x-=110; P.vy=-200; P.vx=150; P.stun=0.25; P.inv=1.6; say("Le chiffrement t'a rattrapé : −1 vie !"); }
+    else if(kind==="time"){ P.inv=1.2; }
+    else { P.x=P.safeX; P.y=P.safeY; P.vx=0; P.vy=0; P.inv=1.6; snapCamera();
+      if(L.wave && L.wave.x > P.x-60) L.wave.x = P.x-90; }       // on ne réapparaît jamais dans la zone chiffrée
   }
   function gameOver(){
     phase="OVER";
@@ -1307,13 +1554,14 @@ var Adv = (function(){
       revealAnswers($("qAnswers"), pick.q, order);
       var ex=$("qExplain"), v=$("qVerdict"), tx=$("qText");
       if(correct){
-        btn.classList.remove("dim"); btn.classList.add("correct");
+        btn.classList.remove("dim"); btn.classList.add("correct"); Sfx.good();
         run.combo++; if(run.combo>run.bestCombo) run.bestCombo=run.combo; run.correct++;
         var pts=100*Math.min(5,run.combo); run.score+=pts; animScore("advScore", run.score);
         cr.taken=true; spark(cr.x+9, cr.y+9, "#4cc9ff", 16); pop(cr.x+9, cr.y-2, "+"+pts);
+        if(L.wave) L.wave.x-=60;                          // bonne réponse = restauration : le chiffrement recule
         ex.className="explain good show"; v.textContent=run.combo>=2?("Cristal validé ! x"+Math.min(5,run.combo)):"Cristal validé !";
       } else {
-        btn.classList.remove("dim"); btn.classList.add("wrong");
+        btn.classList.remove("dim"); btn.classList.add("wrong"); Sfx.bad();
         run.combo=0; run.lives--; shakeBody();
         recordMiss(pick.theme, pick.q, btn.lastChild.textContent);
         cr.cd=2.2;                                         // le cristal reste, avec une autre question au prochain essai
@@ -1340,15 +1588,21 @@ var Adv = (function(){
 
   // ---------- fin de niveau ----------
   function levelClear(){
-    phase="CLEAR"; releaseAll();
-    var bonus=250+run.lives*50; run.score+=bonus; run.levelsDone++; animScore("advScore", run.score);
+    phase="CLEAR"; releaseAll(); Sfx.clear();
+    var tb=Math.max(0,Math.floor(L.time))*5, bonus=250+run.lives*50+tb; run.score+=bonus; run.levelsDone++; animScore("advScore", run.score);
     var last_=levelIdx>=LEVELS.length-1;
     if(!last_ && run.lives<run.maxLives) run.lives++;
     hud(); spark(P.x+6,P.y+6,"#2ef0a6",20);
+    var detail="Bonus : 250 + 50 par vie + 5 par seconde de RTO restante ("+tb+").";
     if(last_){
-      showOv("Mission accomplie","Les 3 niveaux sont validés !","Bonus de fin de niveau : +"+bonus+" pts. Le SI de CampusCloud est résilient.","","Voir le résultat",function(){ hideOv(); finishRun(true); });
+      var secret = run.keys>=LEVELS.length;
+      if(secret){ run.score+=1000; animScore("advScore", run.score); run.secret=true; }
+      showOv(secret?"🔑 Fin secrète débloquée":"Mission accomplie",
+        secret?"Les 3 clés de déchiffrement !":"Les 3 niveaux sont validés !",
+        detail+" "+(secret?"+1000 pts : le SI de CampusCloud est restauré sans payer la rançon. Bravo, Directeur de crise !":"Le SI de CampusCloud est résilient… mais 3 clés de déchiffrement restent cachées quelque part."),
+        "","Voir le résultat",function(){ hideOv(); finishRun(true); });
     } else {
-      showOv("Niveau "+(levelIdx+1)+" terminé","+"+bonus+" pts","Bonus : 250 + 50 par vie restante. Une vie récupérée pour la suite.","","Niveau suivant ▶",function(){ hideOv(); loadLevel(levelIdx+1); });
+      showOv("Niveau "+(levelIdx+1)+" terminé","+"+bonus+" pts",detail+" Une vie récupérée pour la suite.","","Niveau suivant ▶",function(){ hideOv(); loadLevel(levelIdx+1); });
     }
   }
 
@@ -1367,6 +1621,7 @@ var Adv = (function(){
   function updateFx(dt){
     for(var i=parts.length-1;i>=0;i--){ var q=parts[i]; q.life-=dt; if(q.life<=0){ parts.splice(i,1); continue; } q.x+=q.vx*dt; q.y+=q.vy*dt; q.vy+=260*dt; }
     for(i=pops.length-1;i>=0;i--){ var o=pops[i]; o.life-=dt; if(o.life<=0){ pops.splice(i,1); continue; } o.y-=22*dt; }
+    for(i=bumps.length-1;i>=0;i--){ bumps[i].t-=dt; if(bumps[i].t<=0) bumps.splice(i,1); }
     if(shakeT>0) shakeT-=dt;
     if(msgT>0){ msgT-=dt; if(msgT<=0) $("advMsg").classList.remove("show"); }
     // retire les ennemis écrasés après l'animation
@@ -1377,12 +1632,12 @@ var Adv = (function(){
   function camTarget(){
     var w=L.W*T, h=L.H*T;
     var tx = w<=VW ? (w-VW)/2 : clamp(P.x+P.w/2-VW/2+P.face*14, 0, w-VW);
-    var ty = h<=VH ? (h-VH)/2 : clamp(P.y+P.h/2-VH/2, 0, h-VH);
+    var ty = h<=VH ? (h-VH)/2 : clamp(P.y+P.h/2-VH*0.55, 0, h-VH);
     return [tx,ty];
   }
   function snapCamera(){ var t=camTarget(); camX=t[0]; camY=t[1]; }
   function updateCamera(dt){ var t=camTarget(); if(prefersReduced){ camX=t[0]; camY=t[1]; return; }
-    var k=Math.min(1,dt*7); camX+=(t[0]-camX)*k; camY+=(t[1]-camY)*k; }
+    var k=Math.min(1,dt*7); camX+=(t[0]-camX)*k; camY+=(t[1]-camY)*Math.min(1,dt*5); }
 
   // ---------- rendu ----------
   function hash(n){ var s=Math.sin(n*127.1)*43758.5453; return s-Math.floor(s); }
@@ -1400,6 +1655,7 @@ var Adv = (function(){
       ctx.globalAlpha=1;
     }
   }
+  function bumpOffset(tx,ty){ for(var i=0;i<bumps.length;i++) if(bumps[i].tx===tx&&bumps[i].ty===ty) return -Math.sin((1-bumps[i].t/0.18)*Math.PI)*5; return 0; }
   function render(){
     var c=ctx; c.imageSmoothingEnabled=false;
     c.save();
@@ -1407,16 +1663,17 @@ var Adv = (function(){
     // étoiles / points de données
     c.fillStyle="rgba(255,255,255,.35)";
     for(var s=0;s<40;s++){ var sx=((hash(s)*VW*3)-camX*0.08)%VW; if(sx<0) sx+=VW; c.fillRect(Math.round(sx),Math.round(hash(s+90)*VH*0.6),1,1); }
-    drawRacks(0.22, 34, 40, 70, 130, "rgba(10,5,22,.55)", ["#b06bff","#2ef0a6"]);
-    drawRacks(0.45, 30, 56, 40, 90,  "rgba(10,5,22,.8)",  ["#ff2e6a","#36c7d6","#ffab2e"]);
+    drawRacks(0.22, 34, 40, 60, 115, "rgba(10,5,22,.55)", ["#b06bff","#2ef0a6"]);
+    drawRacks(0.45, 30, 56, 34, 80,  "rgba(10,5,22,.8)",  ["#ff2e6a","#36c7d6","#ffab2e"]);
 
     var sh = (shakeT>0 && !prefersReduced) ? (Math.random()*4-2) : 0;
     c.translate(Math.round(-camX+sh), Math.round(-camY));
     var tx0=Math.max(0,Math.floor(camX/T)), tx1=Math.min(L.W-1,Math.floor((camX+VW)/T)+1);
     var ty0=Math.max(0,Math.floor(camY/T)), ty1=Math.min(L.H-1,Math.floor((camY+VH)/T)+1);
+    var i, fr=prefersReduced?0:Math.floor(animT*6);
 
     // décor (derrière)
-    for(var i=0;i<L.decor.length;i++){ var d=L.decor[i]; if(d.tx<tx0-1||d.tx>tx1) continue; drawSprite(c,d.s,d.tx*T,d.ty*T,d.tx); }
+    for(i=0;i<L.decor.length;i++){ var d=L.decor[i]; if(d.tx<tx0-1||d.tx>tx1) continue; drawSprite(c,d.s,d.tx*T,d.ty*T,d.tx); }
     // tuiles
     for(var ty=ty0;ty<=ty1;ty++) for(var tx=tx0;tx<=tx1;tx++){
       var ch=L.grid[ty][tx], X=tx*T, Y=ty*T;
@@ -1424,7 +1681,9 @@ var Adv = (function(){
       else if(ch==="="){ var lft=tx>0&&L.grid[ty][tx-1]==="=", rgt=tx<L.W-1&&L.grid[ty][tx+1]==="=";
         drawSprite(c, !lft?"platL":(!rgt?"platR":"platM"), X, Y, tx); }
       else if(ch==="^") drawSprite(c,"spikes",X,Y,0);
-      else if(ch==="H") drawSprite(c,"spring",X,Y,0);
+      else if(ch==="H") drawSprite(c,(P&&P.spring>0&&Math.abs(P.x+P.w/2-X-9)<14)?"springUp":"spring",X,Y,0);
+      else if(ch==="?"){ var by=Y+bumpOffset(tx,ty)+(prefersReduced?0:Math.round(Math.sin(animT*3+tx)*0.6)); drawSprite(c,"qblock",X,by,0); }
+      else if(ch==="b") drawSprite(c,"usedBlock",X,Y+bumpOffset(tx,ty),0);
     }
     // sortie : drapeau (grisé tant qu'il reste des cristaux)
     if(L.exit){
@@ -1434,6 +1693,12 @@ var Adv = (function(){
       if(open && !prefersReduced){ c.globalAlpha=.25+.15*Math.sin(animT*5); c.fillStyle="#2ef0a6"; c.beginPath(); c.arc(fx+9,fy-4,16,0,6.283); c.fill(); }
       c.globalAlpha=1;
     }
+    // octets, clés
+    for(i=0;i<L.coins.length;i++){ var co=L.coins[i]; if(co.taken) continue; drawSprite(c,"coin",co.x-4,co.y-4,prefersReduced?0:Math.floor(animT*5+co.x*.1)); }
+    for(i=0;i<L.keys.length;i++){ var ky=L.keys[i]; if(ky.taken) continue;
+      var kb=prefersReduced?0:Math.sin(animT*2.5)*2;
+      if(!prefersReduced){ c.save(); c.globalAlpha=.25+.15*Math.sin(animT*6); c.fillStyle="#ffd23f"; c.beginPath(); c.arc(ky.x+7,ky.y+7+kb,12,0,6.283); c.fill(); c.restore(); }
+      drawSprite(c,"key",ky.x-2,ky.y-2+kb,0); }
     // cristaux
     for(i=0;i<L.crystals.length;i++){ var cr=L.crystals[i]; if(cr.taken) continue;
       if(cr.tx<tx0-1||cr.tx>tx1+1) continue;
@@ -1442,24 +1707,49 @@ var Adv = (function(){
       if(!prefersReduced){ c.save(); c.globalAlpha*=.22+.1*Math.sin(animT*4+cr.tx); c.fillStyle="#4cc9ff"; c.beginPath(); c.arc(cr.x+9,cr.y+9+bob,13,0,6.283); c.fill(); c.restore(); }
       drawSprite(c,"crystal",cr.x,cr.y+bob,0); c.globalAlpha=1;
     }
+    // bonus en mouvement
+    for(i=0;i<items.length;i++){ var it=items[i], nm={fire:"fireItem",shield:"shieldItem",heart:"heart"}[it.kind];
+      if(it.kind!=="heart" && !prefersReduced){ c.save(); c.globalAlpha=.35; c.fillStyle=it.kind==="fire"?"#ff7a1a":"#4cc9ff"; c.beginPath(); c.arc(it.x+6,it.y+6,10,0,6.283); c.fill(); c.restore(); }
+      drawSprite(c,nm,it.kind==="heart"?it.x-3:it.x,it.kind==="heart"?it.y-3:it.y,0); }
     // ennemis
-    for(i=0;i<L.enemies.length;i++){ var e=L.enemies[i], frm=prefersReduced?0:Math.floor(animT*6);
+    for(i=0;i<L.enemies.length;i++){ var e=L.enemies[i];
       var ex=Math.round(e.x+e.w/2-12), ey=Math.round(e.y+e.h-23);
-      if(!e.alive){ if(e.type==="E"||e.type==="B"){ c.globalAlpha=Math.max(0,1-e.dead*2); drawSprite(c,"walkerDead",ex,ey+(e.type==="B"?0:0),0,e.dir<0); c.globalAlpha=1; } continue; }
-      drawSprite(c, e.type==="E"?"walker":(e.type==="Z"?"spiky":"bat"), ex, ey, frm, e.dir>0);
+      if(!e.alive){ c.globalAlpha=Math.max(0,1-e.dead*2); drawSprite(c, e.type==="Z"?"spiky":"walkerDead",ex,ey+e.dead*30,0,e.dir<0); c.globalAlpha=1; continue; }
+      drawSprite(c, e.type==="E"?"walker":(e.type==="Z"?"spiky":"bat"), ex, ey, fr, e.dir>0);
       if(DEBUG){ c.strokeStyle="#f0f"; c.strokeRect(e.x+.5,e.y+.5,e.w-1,e.h-1); }
     }
-    // joueur
+    // boules de feu
+    for(i=0;i<shots.length;i++){ var so=shots[i];
+      c.fillStyle="#ffd23f"; c.beginPath(); c.arc(so.x+3,so.y+3,3.5,0,6.283); c.fill();
+      c.fillStyle="#ff5a1a"; c.beginPath(); c.arc(so.x+3-so.vx*.008,so.y+3,2.5,0,6.283); c.fill(); }
+    // joueur (aura pare-feu / bouclier)
     var p=P;
     if(p){
+      var pcx=p.x+p.w/2, pcy=p.y+p.h/2-2;
+      if(p.shield>0 && (p.shield>2 || Math.floor(animT*10)%2===0)){
+        c.save(); c.globalAlpha=.35+(prefersReduced?0:.12*Math.sin(animT*8)); c.strokeStyle="#4cc9ff"; c.lineWidth=2;
+        c.beginPath(); c.arc(pcx,pcy,14,0,6.283); c.stroke(); c.globalAlpha=.12; c.fillStyle="#4cc9ff"; c.fill(); c.restore(); }
+      else if(p.fire && !prefersReduced){ c.save(); c.globalAlpha=.18+.08*Math.sin(animT*9); c.fillStyle="#ff7a1a"; c.beginPath(); c.arc(pcx,pcy,13,0,6.283); c.fill(); c.restore(); }
       var blink = p.inv>0 && !prefersReduced && (Math.floor(p.inv*14)%2===0);
       if(!blink){
         if(p.inv>0&&prefersReduced) c.globalAlpha=.5;
-        var nm = !p.onGround ? "playerJump" : (Math.abs(p.vx)>12 ? "playerWalk" : "playerIdle");
-        drawSprite(c, nm, Math.round(p.x+p.w/2-12), Math.round(p.y+p.h-23), Math.floor(animT*10), p.face<0);
+        var nm2 = !p.onGround ? "playerJump" : (Math.abs(p.vx)>12 ? "playerWalk" : "playerIdle");
+        drawSprite(c, nm2, Math.round(p.x+p.w/2-12), Math.round(p.y+p.h-23), Math.floor(animT*10), p.face<0);
         c.globalAlpha=1;
       }
       if(DEBUG){ c.strokeStyle="#0f0"; c.strokeRect(p.x+.5,p.y+.5,p.w-1,p.h-1); }
+    }
+    // vague de ransomware : zone chiffrée + front lumineux
+    if(L.wave && L.wave.x>camX-10){
+      var wx=L.wave.x, y0=camY, wh=VH;
+      c.save(); c.globalAlpha=.55; c.fillStyle="#3a0d52"; c.fillRect(camX-10,y0,wx-camX+10,wh);
+      c.globalAlpha=.9; c.fillStyle="#b06bff";
+      for(var gy=0;gy<wh;gy+=6){ var gw=4+Math.floor(hash(gy+Math.floor(animT*12))*14); c.fillRect(wx-gw, y0+gy, gw, 3); }
+      c.globalAlpha=.35; c.fillStyle="#ff2e6a";
+      for(var gz=0;gz<18;gz++){ var gx=camX+hash(gz*3.1+Math.floor(animT*8))*(wx-camX), gyy=y0+hash(gz*7.7)*wh; c.fillRect(gx,gyy,3,3); }
+      c.globalAlpha=1; c.font="bold 8px 'Chakra Petch', monospace"; c.fillStyle="#ffd6ff"; c.textAlign="right";
+      if(wx-camX>60) c.fillText("🔒 CHIFFRÉ", wx-6, y0+14);
+      c.restore();
     }
     // particules + textes flottants
     for(i=0;i<parts.length;i++){ var q=parts[i]; c.globalAlpha=Math.max(0,q.life*2); c.fillStyle=q.col; c.fillRect(Math.round(q.x),Math.round(q.y),2,2); }
@@ -1467,12 +1757,15 @@ var Adv = (function(){
     for(i=0;i<pops.length;i++){ var o=pops[i]; c.globalAlpha=Math.min(1,o.life*2); c.fillStyle="#2ef0a6"; c.fillText(o.txt,Math.round(o.x),Math.round(o.y)); }
     c.globalAlpha=1;
     c.restore();
+    // chrono critique : liseré rouge qui pulse
+    if(L.time<=10 && phase==="PLAY" && !prefersReduced){ c.save(); c.globalAlpha=.25+.2*Math.sin(animT*10); c.strokeStyle="#ff2e6a"; c.lineWidth=4; c.strokeRect(2,2,VW-4,VH-4); c.restore(); }
   }
 
   return {
     start:start, stop:stop, pause:pause, resume:resume,
     onKey:onKey,
     phase:function(){ return phase; },
+    enableRoot:function(){ if(P){ P.fire=true; hud(); } },
     ovPrimary:function(){ if(ovAction1 && ovReady() && $("ov").classList.contains("show")) { ovAction1(); return true; } return false; },
     questionKey:function(k){
       if(phase!=="QUESTION") return false;
@@ -1480,7 +1773,7 @@ var Adv = (function(){
       if(k==="enter"||k===" "){ questionDone(); } return true;
     },
     _load:function(i){ loadLevel(i); hideOv(); phase="PLAY"; },
-    _dbg:function(){ return {L:L,P:P,run:run,phase:phase}; }
+    _dbg:function(){ return {L:L,P:P,run:run,phase:phase,items:items,shots:shots}; }
   };
 })();
 
@@ -1493,7 +1786,7 @@ function finishRun(win){
   var isAdv=run.mode===STATE.ADVENTURE;
   var acc = run.asked ? run.correct/run.asked : 0;
   var best=getBest(); if(run.score>best){ best=run.score; setBest(run.score); }
-  $("resEyebrow").textContent = isAdv ? (run.won?"Aventure réussie":"Aventure terminée") : "Mission terminée";
+  $("resEyebrow").textContent = isAdv ? (run.secret?"🔑 Fin secrète débloquée":(run.won?"Aventure réussie":"Aventure terminée")) : (run.practice?"Révision des erreurs terminée":"Mission terminée");
   $("finalScore").textContent=run.score.toLocaleString("fr-FR");
   $("rAcc").textContent=Math.round(acc*100)+"%";
   $("rCombo").textContent="x"+Math.min(5,run.bestCombo)+" ("+run.bestCombo+")";
@@ -1502,9 +1795,109 @@ function finishRun(win){
   $("rLevels").textContent = run.levelsDone+"/"+run.levelsTotal;
   $("rankBadge").textContent=rankFor(acc);
   renderReview();
+  submitToBoard(acc);
   setTheme("#b06bff");
   go(STATE.RESULT);
 }
+// ======================================================================
+// 9 bis. PSEUDO + CLASSEMENT
+//    GitHub Pages ne sert que des fichiers statiques : pour PARTAGER les scores entre joueurs,
+//    il faut une petite base en ligne. Le jeu sait parler à Supabase (gratuit, API REST) :
+//    renseigne LEADERBOARD.url et LEADERBOARD.anonKey (voir README, section « Classement en ligne »).
+//    Sans configuration (ou hors ligne), le classement reste LOCAL à l'appareil : rien ne plante.
+// ======================================================================
+var LEADERBOARD = {
+  url: "",          // ex. "https://abcdefgh.supabase.co"
+  anonKey: "",      // clé publique « anon » du projet (faite pour être visible côté navigateur)
+  table: "scores"
+};
+var PSEUDO_KEY="cybercrise_pseudo_v1", LOCAL_BOARD_KEY="cybercrise_board_v1";
+var PSEUDO_RE=/^[A-Za-z0-9À-ÖØ-öø-ÿ _.\-]{2,16}$/;
+function cleanPseudo(s){ return String(s||"").replace(/\s+/g," ").trim(); }
+function getPseudo(){ try{ return localStorage.getItem(PSEUDO_KEY)||""; }catch(e){ return ""; } }
+function setPseudo(v){ try{ localStorage.setItem(PSEUDO_KEY, v); }catch(e){} }
+
+var Board = (function(){
+  var online = !!(LEADERBOARD.url && LEADERBOARD.anonKey);
+  function headers(){ return { "apikey":LEADERBOARD.anonKey, "Authorization":"Bearer "+LEADERBOARD.anonKey, "Content-Type":"application/json" }; }
+  function withTimeout(p, ms){ return Promise.race([p, new Promise(function(_,rej){ setTimeout(function(){ rej(new Error("timeout")); }, ms); })]); }
+  function readLocal(){ try{ return JSON.parse(localStorage.getItem(LOCAL_BOARD_KEY)||"[]")||[]; }catch(e){ return []; } }
+  function writeLocal(a){ try{ localStorage.setItem(LOCAL_BOARD_KEY, JSON.stringify(a)); }catch(e){} }
+  function sortTop(a, mode){ return a.filter(function(x){ return x.mode===mode; }).sort(function(x,y){ return y.score-x.score; }).slice(0,10); }
+  function saveLocal(entry){
+    var a=readLocal(); a.push(entry);
+    // on garde les 30 meilleurs scores par mode
+    var keep=[]; ["quiz","aventure"].forEach(function(m){ keep=keep.concat(a.filter(function(x){ return x.mode===m; }).sort(function(x,y){ return y.score-x.score; }).slice(0,30)); });
+    writeLocal(keep);
+  }
+  return {
+    isOnline:function(){ return online; },
+    // Enregistre le score (toujours en local, et en ligne si configuré). Résout {online:bool}.
+    submit:function(entry){
+      saveLocal(entry);
+      if(!online) return Promise.resolve({online:false});
+      return withTimeout(fetch(LEADERBOARD.url.replace(/\/$/,"")+"/rest/v1/"+LEADERBOARD.table, {
+          method:"POST", headers:Object.assign(headers(), {"Prefer":"return=minimal"}),
+          body:JSON.stringify({pseudo:entry.pseudo, mode:entry.mode, score:entry.score, accuracy:entry.accuracy, levels:entry.levels})
+        }), 7000).then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return {online:true}; })
+        .catch(function(){ return {online:false, failed:true}; });
+    },
+    // Top 10 d'un mode. Résout {list:[…], online:bool}.
+    top:function(mode){
+      var local=function(failed){ return {list:sortTop(readLocal(), mode), online:false, failed:!!failed}; };
+      if(!online) return Promise.resolve(local(false));
+      var q="?select=pseudo,score,accuracy,levels,created_at&mode=eq."+encodeURIComponent(mode)+"&order=score.desc&limit=10";
+      return withTimeout(fetch(LEADERBOARD.url.replace(/\/$/,"")+"/rest/v1/"+LEADERBOARD.table+q, {headers:headers()}), 7000)
+        .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+        .then(function(list){ return {list:list, online:true}; })
+        .catch(function(){ return local(true); });
+    }
+  };
+})();
+
+function boardSourceText(res){
+  if(res.online) return "🌐 Classement en ligne partagé entre tous les joueurs";
+  if(res.failed) return "⚠ Classement en ligne indisponible — affichage des scores de cet appareil";
+  return "💾 Classement local (cet appareil). Le classement partagé s'active en configurant LEADERBOARD (voir README).";
+}
+function renderBoard(listEl, srcEl, res, me){
+  listEl.innerHTML="";
+  if(!res.list.length){ var e=document.createElement("li"); e.className="empty"; e.textContent="Aucun score pour l'instant — sois le premier !"; listEl.appendChild(e); }
+  var meFound=false;
+  res.list.forEach(function(x,i){
+    var li=document.createElement("li");
+    if(me && !meFound && x.pseudo===me.pseudo && x.score===me.score){ li.className="me"; meFound=true; }
+    var r=document.createElement("span"); r.className="r"; r.textContent="#"+(i+1);
+    var n=document.createElement("span"); n.className="n"; n.textContent=x.pseudo;
+    var s=document.createElement("span"); s.className="s"; s.textContent=Number(x.score).toLocaleString("fr-FR");
+    li.appendChild(r); li.appendChild(n); li.appendChild(s); listEl.appendChild(li);
+  });
+  srcEl.textContent=boardSourceText(res);
+  return meFound ? res.list.indexOf(res.list.filter(function(x){ return x.pseudo===me.pseudo && x.score===me.score; })[0])+1 : 0;
+}
+var boardMode="quiz";
+function refreshTitleBoard(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-board]"), function(b){ b.classList.toggle("on", b.getAttribute("data-board")===boardMode); });
+  var m=boardMode;
+  Board.top(m).then(function(res){ if(m===boardMode) renderBoard($("boardList"), $("boardSrc"), res, null); });
+}
+function submitToBoard(acc){
+  var mode = run.mode===STATE.ADVENTURE ? "aventure" : "quiz";
+  $("resBoardH").textContent="🏆 Classement "+(mode==="quiz"?"Quiz":"Aventure");
+  if(run.practice){
+    $("resRank").textContent="Partie d'entraînement (révision des erreurs) : non classée.";
+  } else {
+    $("resRank").textContent="Enregistrement du score…";
+  }
+  var me={pseudo:getPseudo()||"Anonyme", score:run.score};
+  var p = run.practice ? Promise.resolve() : Board.submit({pseudo:me.pseudo, mode:mode, score:run.score,
+      accuracy:Math.round(acc*100), levels:run.levelsDone, date:new Date().toISOString()});
+  p.then(function(){ return Board.top(mode); }).then(function(res){
+    var rank=renderBoard($("resBoardList"), $("resBoardSrc"), res, run.practice?null:me);
+    if(!run.practice) $("resRank").textContent = rank ? ("Bravo "+me.pseudo+" : tu es #"+rank+" du classement !") : ("Score enregistré, "+me.pseudo+" — pas encore dans le top 10. Rejoue !");
+  });
+}
+
 // Révision des erreurs : question, réponse donnée, bonne réponse, explication, référence au cours
 function renderReview(){
   var list=$("reviewList"); list.innerHTML="";
@@ -1532,7 +1925,7 @@ function renderReview(){
 function share(){
   var acc=run.asked?Math.round(run.correct/run.asked*100):0;
   var mode=run.mode===STATE.ADVENTURE?"Mode Aventure":"Mode Quiz";
-  var txt="🛡️ CyberCrise CampusCloud ("+mode+") — "+run.score.toLocaleString("fr-FR")+" pts ("+rankFor(run.asked?run.correct/run.asked:0)+", "+acc+"% de réussite). À toi de battre mon score !";
+  var txt="🛡️ CyberCrise CampusCloud ("+mode+") — "+(getPseudo()?getPseudo()+" : ":"")+run.score.toLocaleString("fr-FR")+" pts ("+rankFor(run.asked?run.correct/run.asked:0)+", "+acc+"% de réussite). À toi de battre mon score !";
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){ toast("Score copié — colle-le où tu veux !"); },function(){ toast(txt); });
   } else { toast(txt); }
@@ -1541,8 +1934,57 @@ function share(){
 // ======================================================================
 // 10. CÂBLAGE (boutons, clavier, tactile, visibilité)
 // ======================================================================
-$("quizBtn").addEventListener("click", function(){ startQuiz(); });
-$("advBtn").addEventListener("click", function(){ Adv.start(); });
+// pseudo obligatoire avant de jouer
+var pseudoInput=$("pseudo"); pseudoInput.value=getPseudo();
+function ensurePseudo(){
+  var v=cleanPseudo(pseudoInput.value);
+  if(!PSEUDO_RE.test(v)){
+    pseudoInput.classList.add("err"); pseudoInput.focus(); shakeBody();
+    toast("Choisis d'abord un pseudo (2 à 16 caractères : lettres, chiffres, espace, _ - .)");
+    return false;
+  }
+  pseudoInput.classList.remove("err"); pseudoInput.value=v; setPseudo(v); return true;
+}
+pseudoInput.addEventListener("input", function(){ pseudoInput.classList.remove("err"); });
+pseudoInput.addEventListener("keydown", function(e){ if(e.key==="Enter" && ensurePseudo()){ pseudoInput.blur(); toast("Salut "+getPseudo()+" ! Choisis ton mode de jeu."); } });
+function playQuiz(){ if(ensurePseudo()) startQuiz(); }
+function playAdv(){ if(ensurePseudo()) Adv.start(); }
+$("quizBtn").addEventListener("click", playQuiz);
+$("advBtn").addEventListener("click", playAdv);
+Array.prototype.forEach.call(document.querySelectorAll("[data-board]"), function(b){
+  b.addEventListener("click", function(){ boardMode=b.getAttribute("data-board"); refreshTitleBoard(); }); });
+refreshTitleBoard();
+
+// son, plein écran
+Array.prototype.forEach.call(document.querySelectorAll(".mute-btn"), function(b){ b.addEventListener("click", function(){ Sfx.toggle(); b.blur(); }); });
+Sfx.label();
+var fsBtn=$("advFsBtn"), root=document.documentElement;
+if(!(root.requestFullscreen||root.webkitRequestFullscreen)) fsBtn.style.display="none";
+fsBtn.addEventListener("click", function(){
+  var fs=document.fullscreenElement||document.webkitFullscreenElement;
+  if(fs){ (document.exitFullscreen||document.webkitExitFullscreen).call(document); }
+  else { (root.requestFullscreen||root.webkitRequestFullscreen).call(root); }
+  fsBtn.blur();
+});
+
+// ---------- easter eggs ----------
+// 1) code Konami (↑ ↑ ↓ ↓ ← → ← → B A) : « accès root » = pare-feu permanent en Aventure
+var KONAMI=["arrowup","arrowup","arrowdown","arrowdown","arrowleft","arrowright","arrowleft","arrowright","b","a"], kIdx=0;
+document.addEventListener("keydown", function(e){
+  var k=(e.key||"").toLowerCase();
+  kIdx = (k===KONAMI[kIdx]) ? kIdx+1 : (k===KONAMI[0] ? 1 : 0);
+  if(kIdx===KONAMI.length){ kIdx=0; if(!rootMode){ rootMode=true; Sfx.life(); toast("🔓 sudo su — accès root accordé : pare-feu permanent en mode Aventure !"); Adv.enableRoot(); } }
+}, true);
+// 2) cliquer 5 fois sur le titre
+var titleClicks=0, QUOTES=[
+  "« Il n'y a pas de cloud, seulement l'ordinateur de quelqu'un d'autre. »",
+  "« Une sauvegarde non testée n'est qu'une hypothèse. »",
+  "« Le vendredi 17 h n'est pas une fenêtre de maintenance. »",
+  "« Tout le monde a un PRA… jusqu'au premier sinistre. »",
+  "« Ça marche sur ma machine » n'est pas un critère de succès de RFC."];
+document.querySelector(".bigtitle").addEventListener("click", function(){
+  if(++titleClicks%5===0){ Sfx.key(); toast("🥚 "+QUOTES[(titleClicks/5-1)%QUOTES.length]); }
+});
 $("replayBtn").addEventListener("click", function(){ if(run.mode===STATE.ADVENTURE) Adv.start(); else startQuiz(); });
 $("shareBtn").addEventListener("click", share);
 $("retryBtn").addEventListener("click", function(){ if(run.missed.length) startQuiz(run.missed.slice()); });
@@ -1553,6 +1995,7 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-menu]"), function(
 document.addEventListener("keydown", function(e){
   var k=(e.key||"").toLowerCase();
   if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.target && e.target.tagName==="INPUT") return;            // saisie du pseudo
   if(state===STATE.QUIZ){
     if((k===" "||k==="enter")&&answered&&$("nextBtn").classList.contains("show")){ e.preventDefault(); nextQuestion(); return; }
     if(!answered && /^[1-4a-d]$/.test(k)){
@@ -1566,7 +2009,7 @@ document.addEventListener("keydown", function(e){
     if(k==="escape"||k==="p"){ e.preventDefault(); if(ph==="PAUSE") Adv.resume(); else Adv.pause(); return; }
     Adv.onKey(e,true);
   } else if(state===STATE.TITLE){
-    if(k==="1"){ startQuiz(); } else if(k==="2"){ Adv.start(); }
+    if(k==="1"){ playQuiz(); } else if(k==="2"){ playAdv(); }
   }
 });
 document.addEventListener("keyup", function(e){ if(state===STATE.ADVENTURE) Adv.onKey(e,false); });
@@ -1577,7 +2020,7 @@ document.addEventListener("visibilitychange", function(){ if(document.hidden && 
 if(window.matchMedia && window.matchMedia("(pointer: coarse)").matches) document.body.classList.add("is-touch");
 window.addEventListener("touchstart", function(){ document.body.classList.add("is-touch"); }, {once:true, passive:true});
 
-if(DEBUG) window.__cc={Adv:Adv, run:run, go:go, STATE:STATE, LEVELS:LEVELS, BANK:BANK};
+if(DEBUG) window.__cc={Adv:Adv, run:run, go:go, STATE:STATE, LEVELS:LEVELS, BANK:BANK, Board:Board};
 })();
 </script>
 </body>
