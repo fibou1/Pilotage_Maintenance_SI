@@ -26,8 +26,26 @@ Le jeu sert à réviser le cours « Pilotage de la maintenance du SI » à parti
 - Ramasse les **cristaux de données** : chacun déclenche un QCM.
   - Bonne réponse : le cristal est validé et tu gagnes des points.
   - Mauvaise réponse : tu perds une vie et tu recules.
-- Évite les piques et les ennemis à pointes, et saute sur les ennemis bleus.
-- Rejoins le drapeau une fois tous les cristaux validés.
+- Rejoins le drapeau une fois tous les cristaux validés, **avant la fin du chrono RTO**.
+
+| Élément | Effet | Lien avec le cours |
+|---|---|---|
+| **Bloc « ! »** (à frapper par-dessous) | Donne le **Pare-feu**, ou le **Bouclier PCA** si tu l'as déjà | — |
+| 🔥 **Pare-feu** | Tire des boules de feu (`F` / `X` ou bouton 🔥) qui détruisent **tous** les ennemis. Perdu si tu es touché. | Le pare-feu bloque les menaces |
+| 🛡 **Bouclier PCA** | Invulnérable 10 s : les ennemis sont détruits au contact | Le PCA maintient l'activité pendant la crise |
+| ⏱ **Chrono RTO** | Temps limite du niveau. Alerte à 30 s, compte à rebours sonore à 10 s. À 0 : −1 vie et +60 s. Le temps restant donne un bonus. | RTO = délai maximal de reprise |
+| ● **Octets** (pièces) | +10 pts ; **30 octets = +1 vie** | — |
+| **Vague ransomware** (niveau 3) | Le SI est chiffré depuis la gauche : avance ! Chaque **bonne réponse** fait reculer le chiffrement. | Restaurer = repousser l'attaque |
+| **Ressort** | Maintiens **SAUT** en rebondissant pour aller très haut | — |
+
+> 🥚 **Des secrets sont cachés** : 3 objets rares (un par niveau) débloquent une fin secrète, des blocs invisibles existent, et un célèbre code de jeu vidéo donne un accès… root. À toi de trouver !
+
+### Pseudo et classement
+
+Avant de jouer, choisis un **pseudo** (2 à 16 caractères). En fin de partie, ton score s'affiche dans le **🏆 classement** (Quiz et Aventure séparés), avec ton rang. Les parties « Rejouer mes erreurs » sont des entraînements : elles ne sont pas classées.
+
+- **Par défaut**, le classement est **local** : il ne contient que les scores joués sur l'appareil.
+- **Pour un classement partagé entre tous les joueurs**, suis le guide [Classement en ligne](#-classement-en-ligne-partagé-entre-joueurs) (10 minutes, gratuit).
 
 ### En fin de partie : la révision des erreurs
 
@@ -49,10 +67,12 @@ Le bouton **« Rejouer mes erreurs »** relance un quiz composé uniquement de c
 | Question suivante | `Entrée` ou `Espace` | Bouton « Continuer » |
 | Se déplacer (Aventure) | `←` `→`, `Q` `D` (AZERTY) ou `A` `D` (QWERTY) | Boutons ◀ ▶ |
 | Sauter (appui long = saut plus haut) | `↑`, `Z`, `W` ou `Espace` | Bouton ▲ |
+| Boule de feu (avec le pare-feu) | `F`, `X`, `K` ou `Maj` | Bouton 🔥 |
 | Pause | `Échap` ou `P` | Bouton « Pause » |
+| Son / plein écran | Boutons 🔊 et ⛶ du HUD | Idem |
 | Lancer un mode depuis l'accueil | `1` = Quiz · `2` = Aventure | — |
 
-Sur téléphone en portrait, la zone de jeu de l'Aventure est automatiquement **zoomée** pour rester lisible.
+La zone de jeu de l'Aventure occupe **toute la largeur disponible** (bouton ⛶ pour le plein écran). Sur téléphone en portrait, elle est automatiquement **zoomée** pour rester lisible.
 
 ---
 
@@ -105,6 +125,61 @@ Chaque question précise sa **difficulté** (1 facile, 2 moyen, 3 piège ou calc
 
 ---
 
+## 🌐 Classement en ligne (partagé entre joueurs)
+
+### Pourquoi faut-il un service externe ?
+
+GitHub Pages ne fait que **servir des fichiers** : il ne peut pas enregistrer de données envoyées par les joueurs. Pour partager les scores, le jeu doit les envoyer à une **petite base de données en ligne**.
+
+Le jeu est prêt pour **[Supabase](https://supabase.com)** : une base PostgreSQL gratuite qui expose directement une API REST. Il n'y a aucun serveur à coder.
+
+### Étapes (environ 10 minutes)
+
+1. **Créer un compte** sur [supabase.com](https://supabase.com), puis un projet (offre *Free*). Choisis une région proche, par exemple `eu-west`.
+2. Ouvrir **SQL Editor**, coller le script ci-dessous et cliquer sur **Run** :
+
+   ```sql
+   -- Table des scores
+   create table public.scores (
+     id         bigint generated always as identity primary key,
+     pseudo     text not null check (char_length(pseudo) between 2 and 16),
+     mode       text not null check (mode in ('quiz', 'aventure')),
+     score      integer not null check (score between 0 and 100000),
+     accuracy   integer check (accuracy between 0 and 100),
+     levels     integer check (levels between 0 and 3),
+     created_at timestamptz not null default now()
+   );
+
+   -- Sécurité : tout le monde peut LIRE et AJOUTER, personne ne peut modifier ni supprimer
+   alter table public.scores enable row level security;
+   create policy "lecture publique" on public.scores for select using (true);
+   create policy "ajout public"     on public.scores for insert with check (true);
+   ```
+
+3. Ouvrir **Project Settings → API** et copier :
+   - la **Project URL** (ex. `https://abcdefgh.supabase.co`) ;
+   - la clé **`anon` public**.
+4. Dans `index.html`, chercher `var LEADERBOARD` et remplir :
+
+   ```js
+   var LEADERBOARD = {
+     url: "https://abcdefgh.supabase.co",
+     anonKey: "eyJhbGciOi...",   // clé anon public
+     table: "scores"
+   };
+   ```
+
+5. Commiter, pousser, et attendre la mise à jour de GitHub Pages. Le classement affiche alors **« 🌐 Classement en ligne partagé entre tous les joueurs »**.
+
+### À savoir
+
+- ✅ **La clé `anon` peut être publique** : elle est faite pour être utilisée dans le navigateur. Ce sont les règles RLS ci-dessus qui protègent la table (lecture et ajout seulement).
+- ⚠️ **Ne mets jamais** la clé `service_role` dans le jeu : elle donne tous les droits sur la base.
+- ⚠️ **Limite** : comme pour tout jeu 100 % côté navigateur, un joueur averti peut envoyer un faux score. Les contraintes SQL (score ≤ 100 000, pseudo ≤ 16 caractères) limitent les abus. Pour modérer, supprime les lignes suspectes depuis **Table Editor**.
+- 🔁 **Si le service est injoignable**, le jeu bascule automatiquement sur le classement local, sans erreur.
+
+---
+
 ## 🗂️ Structure du dépôt
 
 ```text
@@ -120,11 +195,11 @@ kenney_pixel-platformer/      pack Kenney d'origine (sources des sprites)
 
 ## 🛠️ Technique
 
-- **Vanilla JavaScript**, un seul fichier, aucune dépendance JavaScript externe : la sphère 3D du mode Quiz est dessinée en Canvas 2D.
+- **Vanilla JavaScript**, un seul fichier, aucune dépendance JavaScript externe : la sphère 3D du mode Quiz est dessinée en Canvas 2D et les **bruitages sont synthétisés en WebAudio** (aucun fichier son).
 - Moteur de plateforme sur `<canvas>` : `requestAnimationFrame`, physique à pas fixe (vitesse identique quel que soit le nombre d'images par seconde), collisions sur une grille de tuiles.
 - Respect de `prefers-reduced-motion` : animations et secousses réduites.
 - Si une image manque, un dessin de remplacement coloré s'affiche : le jeu ne plante jamais.
-- Le record est enregistré dans le navigateur (`localStorage`).
+- Le pseudo, le record et le classement local sont enregistrés dans le navigateur (`localStorage`). Le classement partagé passe par Supabase s'il est configuré.
 
 ### Tester en local
 
