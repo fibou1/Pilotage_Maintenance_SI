@@ -11,6 +11,13 @@ Le jeu sert à réviser le cours « Pilotage de la maintenance du SI » à parti
 
 ---
 
+## 📚 Choix de la matière
+
+Le jeu s'ouvre sur un **menu des matières**. Pour l'instant, une seule est disponible : **Pilotage de la Maintenance du SI**. D'autres viendront.
+
+- Le bouton **« ← Changer de matière »** (ou la touche `Échap`) ramène à ce menu.
+- **Lien direct** vers une matière, sans passer par le menu : `https://fibou1.github.io/Pilotage_Maintenance_SI/?matiere=pilotage`
+
 ## 🎮 Les modes de jeu
 
 ### Mode Quiz (arcade)
@@ -179,6 +186,31 @@ Le jeu est prêt pour **[Supabase](https://supabase.com)** : une base PostgreSQL
 - 🔁 **Si le service est injoignable**, le jeu bascule automatiquement sur le classement local, sans erreur.
 
 ---
+
+## ➕ Ajouter une matière (feuille de route)
+
+### Le principe : une branche pour TRAVAILLER, `main` pour PUBLIER
+
+GitHub Pages publie **une seule branche** (`main`). Une matière qui reste sur sa propre branche ne serait donc **jamais visible** sur le site. On utilise les branches pour préparer chaque matière, puis on les fusionne dans `main` :
+
+```text
+main  ──────●────────────●────────────●──────▶  publié sur GitHub Pages
+             \          /  \          /
+matiere/reseaux ●──●──●     \        /           (préparation, puis pull request)
+                     matiere/cyber ●──●
+```
+
+1. Créer une branche dédiée : `matiere/<nom>` (ex. `matiere/reseaux`).
+2. Y ajouter la matière (étapes ci-dessous) et la tester.
+3. Ouvrir une **pull request** vers `main`, puis fusionner : la matière apparaît dans le menu.
+
+### Les étapes dans le code
+
+1. Ajouter une entrée dans `var SUBJECTS` (`index.html`) : `id`, nom, icône, couleur, description.
+2. Lui donner sa propre banque de questions (`THEMES` + `BANK`) et ses niveaux (`LEVELS`), au même format que la matière actuelle.
+3. Lancer `node tools/check-bank.js` pour vérifier les questions.
+
+> 💡 **Prochaine étape conseillée** : dès la 2ᵉ matière, sortir les données de chaque matière dans un fichier dédié (`matieres/pilotage/questions.js`, `matieres/reseaux/questions.js`…). `index.html` restera léger et chaque matière pourra évoluer sans toucher au moteur du jeu. GitHub Pages sert ces fichiers sans aucune configuration.
 
 ## 🗂️ Structure du dépôt
 

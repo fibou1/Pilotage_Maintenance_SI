@@ -253,6 +253,22 @@ body.is-touch .adv-help{display:none}
 .board .empty{color:var(--fg-faint);font-size:13px;display:block;padding:8px}
 .board-src{font-family:var(--font-mono);font-size:10px;color:var(--fg-faint);margin-top:8px;letter-spacing:.03em}
 .rank-line{font-family:var(--font-hud);color:var(--ok);margin-bottom:8px;font-size:14px}
+/* écran « choix de la matière » */
+.subject-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;width:100%;max-width:760px}
+.subject-card{position:relative;text-align:left;cursor:pointer;color:var(--fg);font-family:var(--font-body);
+  background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--sc,var(--accent));border-radius:16px;padding:18px 18px 16px;
+  display:flex;flex-direction:column;gap:8px;transition:transform .15s,box-shadow .25s,border-color .2s}
+.subject-card:hover{transform:translateY(-3px);box-shadow:0 14px 40px -18px var(--sc,var(--accent));border-color:var(--sc,var(--accent))}
+.subject-card .ico{font-size:30px;line-height:1}
+.subject-card .nm{font-family:var(--font-hud);font-weight:700;font-size:1.25rem;line-height:1.2}
+.subject-card .ds{color:var(--fg-dim);font-size:14px;line-height:1.5}
+.subject-card .mt{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.subject-card .go{font-family:var(--font-hud);font-weight:700;color:var(--sc,var(--accent));margin-top:4px}
+.subject-card.soon{cursor:default;opacity:.55;border-style:dashed;border-top-style:dashed}
+.subject-card.soon:hover{transform:none;box-shadow:none;border-color:var(--line)}
+.back-link{font-family:var(--font-hud);font-weight:600;font-size:13px;cursor:pointer;color:var(--fg-dim);background:none;border:1px solid var(--line);
+  border-radius:999px;padding:6px 14px}
+.back-link:hover{color:var(--fg);border-color:var(--accent)}
 .foot{font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);text-align:center;padding-top:14px;letter-spacing:.04em}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:95;opacity:0;
   font-family:var(--font-hud);font-size:14px;background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--ok);
@@ -270,10 +286,21 @@ body.is-touch .adv-help{display:none}
 
 <div class="stage">
 
-  <!-- ===== ÉTAT TITLE ===== -->
-  <section class="screen active" id="scrTitle">
+  <!-- ===== ÉTAT SUBJECT : choix de la matière à réviser ===== -->
+  <section class="screen active" id="scrSubject">
     <div class="title-wrap">
-      <div class="eyebrow">Révision interactive · Pilotage de la maintenance du SI</div>
+      <div class="eyebrow">Révision interactive · Master 2 Infrastructure, Cloud &amp; Sécurité</div>
+      <h1 class="bigtitle">CYBER<b>CRISE</b></h1>
+      <p class="subtitle">Choisis la matière que tu veux réviser.</p>
+      <div class="subject-grid" id="subjectGrid" role="list"></div>
+    </div>
+  </section>
+
+  <!-- ===== ÉTAT TITLE : accueil de la matière choisie ===== -->
+  <section class="screen" id="scrTitle">
+    <div class="title-wrap">
+      <button class="back-link" type="button" id="changeSubjectBtn">← Changer de matière</button>
+      <div class="eyebrow" id="subjectEyebrow">Révision interactive · Pilotage de la maintenance du SI</div>
       <h1 class="bigtitle">CYBER<b>CRISE</b></h1>
       <p class="subtitle">Neutralise les menaces en répondant juste. Choisis ton terrain : le quiz arcade pour enchaîner les combos, ou l'aventure 2D pour collecter des cristaux de données à travers le SI de CampusCloud.</p>
       <div class="themes-row" id="themesRow"></div>
@@ -719,9 +746,24 @@ function rankFor(acc){
 // ======================================================================
 // 3. MACHINE À ÉTATS  TITRE → QUIZ | AVENTURE → RÉSULTAT
 // ======================================================================
-var STATE = { TITLE:"TITLE", QUIZ:"QUIZ", ADVENTURE:"ADVENTURE", RESULT:"RESULT" };
-var SCREEN_OF = { TITLE:"scrTitle", QUIZ:"scrGame", ADVENTURE:"scrAdv", RESULT:"scrResults" };
-var state = STATE.TITLE;
+var STATE = { SUBJECT:"SUBJECT", TITLE:"TITLE", QUIZ:"QUIZ", ADVENTURE:"ADVENTURE", RESULT:"RESULT" };
+var SCREEN_OF = { SUBJECT:"scrSubject", TITLE:"scrTitle", QUIZ:"scrGame", ADVENTURE:"scrAdv", RESULT:"scrResults" };
+var state = STATE.SUBJECT;
+
+// ----------------------------------------------------------------------
+// MATIÈRES — premier menu du jeu.
+// Pour ajouter une matière plus tard : ajouter une entrée ici (available:true)
+// avec ses propres THEMES / BANK / LEVELS (voir README, « Ajouter une matière »).
+// Lien direct vers une matière : index.html?matiere=pilotage
+// ----------------------------------------------------------------------
+var SUBJECTS = [
+  { id:"pilotage", icon:"🛠️", color:"#b06bff", available:true,
+    name:"Pilotage de la Maintenance du SI",
+    desc:"Gouverner, prévenir, superviser, rétablir et apprendre — à partir du cas fil rouge CampusCloud.",
+    tags:["7 modules","Cas CampusCloud"] }
+];
+var SUBJECT_KEY="cybercrise_subject_v1";
+var subject = SUBJECTS[0];
 
 // Bilan de la partie en cours (partagé par les deux modes)
 var run = { mode:STATE.QUIZ, score:0, combo:0, bestCombo:0, asked:0, correct:0, lives:3, maxLives:3, levelsDone:0, levelsTotal:0, won:false, missed:[] };
@@ -746,7 +788,8 @@ function go(next){
   Object.keys(SCREEN_OF).forEach(function(k){ $(SCREEN_OF[k]).classList.toggle("active", k===next); });
   document.body.setAttribute("data-state", next);
   window.scrollTo(0,0);
-  if(next===STATE.TITLE){ setTheme("#b06bff"); refreshBestLine(); if(typeof refreshTitleBoard==="function") refreshTitleBoard(); }
+  if(next===STATE.TITLE){ setTheme(subject.color); refreshBestLine(); if(typeof refreshTitleBoard==="function") refreshTitleBoard(); }
+  if(next===STATE.SUBJECT){ setTheme("#b06bff"); var f=document.querySelector(".subject-card:not(.soon)"); if(f) f.focus({preventScroll:true}); }
 }
 
 // ---------- écran titre ----------
@@ -755,6 +798,37 @@ THEMES.forEach(function(t){ var el=document.createElement("span"); el.className=
   el.style.borderLeftColor=t.color; el.textContent=t.name; themesRow.appendChild(el); });
 $("qCountChip").textContent = TOTAL_Q+" questions";
 $("themesChip").textContent = THEMES.length+" domaines";
+// ---------- menu des matières ----------
+function chooseSubject(s){
+  subject=s; try{ localStorage.setItem(SUBJECT_KEY, s.id); }catch(e){}
+  $("subjectEyebrow").textContent="Révision interactive · "+s.name;
+  document.title="CyberCrise — "+s.name;
+  go(STATE.TITLE);
+}
+(function(){
+  var grid=$("subjectGrid");
+  SUBJECTS.forEach(function(s){
+    var b=document.createElement("button"); b.type="button"; b.className="subject-card"; b.setAttribute("role","listitem");
+    b.style.setProperty("--sc", s.color);
+    var nQ=0; THEMES.forEach(function(t){ nQ+=BANK[t.id].length; });       // matière unique pour l'instant : la banque courante
+    var tags=s.tags.concat([nQ+" questions", THEMES.length+" domaines"]);
+    b.innerHTML='<span class="ico" aria-hidden="true"></span><span class="nm"></span><span class="ds"></span><span class="mt"></span><span class="go">Réviser cette matière ▶</span>';
+    b.querySelector(".ico").textContent=s.icon; b.querySelector(".nm").textContent=s.name; b.querySelector(".ds").textContent=s.desc;
+    tags.forEach(function(t){ var c=document.createElement("span"); c.className="chip"; c.textContent=t; b.querySelector(".mt").appendChild(c); });
+    b.addEventListener("click", function(){ chooseSubject(s); });
+    grid.appendChild(b);
+  });
+  // emplacement visuel pour les prochaines matières
+  var soon=document.createElement("div"); soon.className="subject-card soon"; soon.setAttribute("role","listitem"); soon.setAttribute("aria-disabled","true");
+  soon.innerHTML='<span class="ico" aria-hidden="true">🔒</span><span class="nm">Bientôt</span><span class="ds">D\'autres matières arrivent prochainement.</span>';
+  grid.appendChild(soon);
+  // lien direct ?matiere=… : on saute le menu
+  var m=(location.search.match(/[?&]matiere=([\w-]+)/)||[])[1];
+  // (différé : le reste du script — classement, son… — doit être initialisé avant d'afficher l'accueil)
+  if(m){ for(var i=0;i<SUBJECTS.length;i++) if(SUBJECTS[i].id===m && SUBJECTS[i].available){ setTimeout(chooseSubject.bind(null, SUBJECTS[i]), 0); break; } }
+})();
+$("changeSubjectBtn").addEventListener("click", function(){ go(STATE.SUBJECT); });
+
 function refreshBestLine(){ var b=getBest(); $("bestLine").innerHTML = b>0 ? "Ton record : <b>"+b.toLocaleString("fr-FR")+" pts</b>" : "Aucun record encore — à toi de jouer."; }
 refreshBestLine();
 
@@ -1982,9 +2056,9 @@ var titleClicks=0, QUOTES=[
   "« Le vendredi 17 h n'est pas une fenêtre de maintenance. »",
   "« Tout le monde a un PRA… jusqu'au premier sinistre. »",
   "« Ça marche sur ma machine » n'est pas un critère de succès de RFC."];
-document.querySelector(".bigtitle").addEventListener("click", function(){
+Array.prototype.forEach.call(document.querySelectorAll(".bigtitle"), function(t){ t.addEventListener("click", function(){
   if(++titleClicks%5===0){ Sfx.key(); toast("🥚 "+QUOTES[(titleClicks/5-1)%QUOTES.length]); }
-});
+}); });
 $("replayBtn").addEventListener("click", function(){ if(run.mode===STATE.ADVENTURE) Adv.start(); else startQuiz(); });
 $("shareBtn").addEventListener("click", share);
 $("retryBtn").addEventListener("click", function(){ if(run.missed.length) startQuiz(run.missed.slice()); });
@@ -2008,7 +2082,10 @@ document.addEventListener("keydown", function(e){
     if((k==="enter"||k===" ")&&(ph==="INTRO"||ph==="PAUSE"||ph==="CLEAR"||ph==="OVER")){ e.preventDefault(); if(ph==="PAUSE") Adv.resume(); else Adv.ovPrimary(); return; }
     if(k==="escape"||k==="p"){ e.preventDefault(); if(ph==="PAUSE") Adv.resume(); else Adv.pause(); return; }
     Adv.onKey(e,true);
+  } else if(state===STATE.SUBJECT){
+    if(k==="1"){ chooseSubject(SUBJECTS[0]); }
   } else if(state===STATE.TITLE){
+    if(k==="escape"){ go(STATE.SUBJECT); return; }
     if(k==="1"){ playQuiz(); } else if(k==="2"){ playAdv(); }
   }
 });
