@@ -2,6 +2,20 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Les versions publiées portent un tag git.
 
+## [2.1.0] — 2026-10-08
+
+Refonte de l'interface des menus.
+
+### Modifié
+- **Choix de la matière** : en-tête de marque, cartes de matière plus riches avec ta progression (record, meilleure note) et rappel des trois façons de jouer.
+- **Accueil de la matière** : barre de navigation, en-tête avec chiffres clés et carte « pseudo » (avatar qui s'allume quand le pseudo est valide), trois tuiles de mode homogènes (description lisible, durée, raccourci clavier).
+- **Quiz ciblé** : panneau dédié avec puces colorées et compteurs, bouton « Lancer le quiz ciblé ». Le ciblage et le classement s'affichent côte à côte.
+- **Résultats** : carte de bilan compacte (score, rang, statistiques, actions), réussite par domaine et classement côte à côte, puis correction détaillée.
+- Textes secondaires plus contrastés, mise en page mobile revue (aucun débordement horizontal).
+
+### Corrigé
+- Le dégradé du fond se répétait en bande sur les pages longues.
+
 ## [2.0.0] — 2026-10-08
 
 Réorganisation complète du projet pour accueillir plusieurs matières, et nouveaux modes de révision.
