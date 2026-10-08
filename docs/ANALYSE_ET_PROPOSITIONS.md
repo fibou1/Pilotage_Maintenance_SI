@@ -1,7 +1,10 @@
 # CyberCrise CampusCloud — Analyse complète et propositions d'amélioration
 
 > **Objet** : bilan du jeu de révision « Pilotage de la maintenance du SI » (version en ligne sur GitHub Pages), confronté au cours, au cas fil rouge et aux assets Kenney fournis.
-> **Livrables associés** : ce document + `docs/questions-proposees.js` (60 nouvelles questions prêtes à fusionner).
+> **Livrables associés** : ce document + `docs/archive/questions-proposees.js` (60 nouvelles questions prêtes à fusionner).
+
+> ### 🗂️ Version 2.0.0 — nouvelle organisation
+> Les questions ne sont plus dans `index.html` : elles sont dans `matieres/pilotage/matiere.js` (vérification : `node tools/check-bank.js`). L'examen blanc et le quiz ciblé proposés ci-dessous (section 6, P1) sont réalisés. Voir `CHANGELOG.md`.
 
 > ### ✅ Mise à jour — corrections appliquées dans `index.html`
 > - **Biais de longueur** : la bonne réponse n'est plus la plus longue que dans **15 %** des questions (contre 78 %). Le contrôle est automatisé avec `node tools/check-bank.js`.
@@ -111,7 +114,7 @@ Chaque module produit un **artefact** réutilisé par le suivant. C'est l'idée 
 
 ---
 
-## 5. Questions proposées (fichier `docs/questions-proposees.js`)
+## 5. Questions proposées (fichier `docs/archive/questions-proposees.js`)
 
 ### 5.1 Contenu
 
@@ -223,7 +226,7 @@ Contexte : jeu de révision index.html (un seul fichier, GitHub Pages) — voir
 docs/ANALYSE_ET_PROPOSITIONS.md pour l'analyse complète.
 
 Sprint 1, garde un seul fichier autonome et le fallback hors ligne :
-1. Fusionne docs/questions-proposees.js dans BANK/THEMES (160 questions,
+1. Fusionne docs/archive/questions-proposees.js dans BANK/THEMES (160 questions,
    12 thèmes) ; ajoute gouv/doc/cyber/cas aux thèmes des 3 niveaux Aventure.
 2. Corrige le biais de longueur des 100 questions existantes : la bonne
    réponse ne doit pas être la plus longue dans plus de 30 % des cas

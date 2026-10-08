@@ -1,0 +1,28 @@
+# Vérifications automatiques à chaque push / pull request :
+#  - syntaxe de tous les fichiers JavaScript du jeu
+#  - cohérence des données des matières (questions, domaines, niveaux)
+name: Vérifier le jeu
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Syntaxe JavaScript
+        run: for f in js/*.js matieres/*/matiere.js tools/*.js; do node --check "$f" || exit 1; done
+      - name: Données des matières
+        run: node tools/check-bank.js
+      - name: Fichiers référencés par index.html
+        run: |
+          for f in $(grep -oE '(src|href)="[^"#:]+"' index.html | sed -E 's/^(src|href)="//; s/"$//'); do
+            test -f "$f" || { echo "Fichier manquant : $f"; exit 1; }
+          done
+          echo "Tous les fichiers référencés existent."
